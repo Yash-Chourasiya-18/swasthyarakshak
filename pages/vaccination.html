@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Child Vaccination | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">💉 Child Vaccination Tracker</h1><p class="page-sub">India NIS schedule & custom vaccine records</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-val" id="done-count">0</div><div class="stat-lbl">Vaccines Given</div></div>
+      <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-val" id="overdue-count">0</div><div class="stat-lbl">Overdue</div></div>
+      <div class="stat-card blue"><div class="stat-icon">📅</div><div class="stat-val" id="upcoming-count">0</div><div class="stat-lbl">Due in 30 days</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Child Profile</div>
+        <div class="form-group"><label>Child's Name</label><input type="text" id="child-name" placeholder="e.g. Aarav" class="input"></div>
+        <div class="form-group"><label>Date of Birth</label><input type="date" id="child-dob" class="input"></div>
+        <div class="form-group"><label>Gender</label>
+          <select id="child-gender" class="input"><option>Boy</option><option>Girl</option></select>
+        </div>
+        <button class="btn btn-primary w-full" onclick="generateSchedule()">📋 Generate NIS Schedule</button>
+        <div class="divider"></div>
+        <div class="card-title" style="font-size:14px">Add Custom Vaccine</div>
+        <div class="form-row">
+          <div class="form-group"><label>Vaccine Name</label><input type="text" id="custom-vac" placeholder="e.g. Varicella" class="input"></div>
+          <div class="form-group"><label>Date Given</label><input type="date" id="custom-date" class="input"></div>
+        </div>
+        <div class="form-group"><label>Doctor / Hospital</label><input type="text" id="custom-doc" placeholder="e.g. Dr. Sharma, AIIMS" class="input"></div>
+        <div class="form-group"><label>Batch No. (optional)</label><input type="text" id="batch-no" placeholder="e.g. BX-2024-001" class="input"></div>
+        <button class="btn btn-outline w-full" onclick="addCustomVaccine()">+ Add Vaccine Record</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Vaccination Records</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button class="btn btn-sm btn-outline" onclick="filterVac('all')">All</button>
+          <button class="btn btn-sm btn-primary" onclick="filterVac('done')">✅ Done</button>
+          <button class="btn btn-sm btn-danger" onclick="filterVac('overdue')">⚠️ Overdue</button>
+          <button class="btn btn-sm btn-outline" onclick="filterVac('upcoming')">📅 Upcoming</button>
+        </div>
+        <div id="vaccine-records"></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('vaccine');
+document.getElementById('custom-date').value = new Date().toISOString().split('T')[0];
+
+// India NIS schedule template (age in days from birth)
+const NIS_SCHEDULE = [
+  { name: 'BCG', age: 0, desc: 'At Birth' },
+  { name: 'OPV (Birth dose)', age: 0, desc: 'At Birth' },
+  { name: 'Hepatitis B (Birth)', age: 0, desc: 'At Birth' },
+  { name: 'OPV (1st dose)', age: 42, desc: '6 weeks' },
+  { name: 'Pentavalent (1st)', age: 42, desc: '6 weeks' },
+  { name: 'Rotavirus (1st)', age: 42, desc: '6 weeks' },
+  { name: 'IPV (1st)', age: 42, desc: '6 weeks' },
+  { name: 'fIPV (1st)', age: 42, desc: '6 weeks' },
+  { name: 'OPV (2nd dose)', age: 70, desc: '10 weeks' },
+  { name: 'Pentavalent (2nd)', age: 70, desc: '10 weeks' },
+  { name: 'Rotavirus (2nd)', age: 70, desc: '10 weeks' },
+  { name: 'OPV (3rd dose)', age: 98, desc: '14 weeks' },
+  { name: 'Pentavalent (3rd)', age: 98, desc: '14 weeks' },
+  { name: 'IPV (2nd)', age: 98, desc: '14 weeks' },
+  { name: 'Rotavirus (3rd)', age: 98, desc: '14 weeks' },
+  { name: 'Measles/MR (1st)', age: 274, desc: '9 months' },
+  { name: 'JE Vaccine (1st)', age: 274, desc: '9 months' },
+  { name: 'OPV Booster', age: 365, desc: '12 months' },
+  { name: 'MR (2nd)', age: 548, desc: '18 months' },
+  { name: 'DPT Booster 1', age: 548, desc: '18 months' },
+  { name: 'JE Vaccine (2nd)', age: 548, desc: '18 months' },
+  { name: 'Vitamin A (2nd)', age: 548, desc: '18 months' },
+  { name: 'DPT Booster 2', age: 1825, desc: '5 years' },
+  { name: 'TT (1st)', age: 3650, desc: '10 years' },
+  { name: 'TT (2nd)', age: 5475, desc: '15 years' },
+];
+
+let allVaccines = JSON.parse(localStorage.getItem('vaccine_records') || '[]');
+let currentFilter = 'all';
+
+function generateSchedule() {
+  const name = document.getElementById('child-name').value;
+  const dob = document.getElementById('child-dob').value;
+  if (!name || !dob) return alert('Please enter child name and date of birth.');
+  const dobDate = new Date(dob);
+  localStorage.setItem('child_profile', JSON.stringify({ name, dob }));
+  const today = new Date();
+  const existingNames = allVaccines.map(v => v.name);
+  NIS_SCHEDULE.forEach(v => {
+    if (!existingNames.includes(v.name)) {
+      const dueDate = new Date(dobDate);
+      dueDate.setDate(dueDate.getDate() + v.age);
+      const status = dueDate < today ? 'overdue' : (dueDate - today) / (1000 * 60 * 60 * 24) <= 30 ? 'upcoming' : 'scheduled';
+      allVaccines.push({ name: v.name, desc: v.desc, dueDate: dueDate.toISOString().split('T')[0], status, given: false, custom: false });
+    }
+  });
+  saveVaccines();
+  renderRecords();
+}
+
+function addCustomVaccine() {
+  const name = document.getElementById('custom-vac').value;
+  const date = document.getElementById('custom-date').value;
+  const doc = document.getElementById('custom-doc').value;
+  const batch = document.getElementById('batch-no').value;
+  if (!name || !date) return alert('Please enter vaccine name and date.');
+  allVaccines.unshift({ name, givenDate: date, doc, batch, status: 'done', given: true, custom: true, dueDate: date });
+  saveVaccines();
+  renderRecords();
+  document.getElementById('custom-vac').value = '';
+  document.getElementById('custom-doc').value = '';
+  document.getElementById('batch-no').value = '';
+}
+
+function markDone(idx) {
+  allVaccines[idx].given = true;
+  allVaccines[idx].status = 'done';
+  allVaccines[idx].givenDate = new Date().toISOString().split('T')[0];
+  saveVaccines();
+  renderRecords();
+}
+
+function saveVaccines() {
+  localStorage.setItem('vaccine_records', JSON.stringify(allVaccines));
+}
+
+function filterVac(f) { currentFilter = f; renderRecords(); }
+
+function renderRecords() {
+  const today = new Date();
+  const filtered = allVaccines.filter(v => {
+    if (v.dueDate) {
+      const due = new Date(v.dueDate);
+      if (!v.given && due < today) v.status = 'overdue';
+      else if (!v.given && (due - today) / (1000 * 60 * 60 * 24) <= 30) v.status = 'upcoming';
+      else if (!v.given) v.status = 'scheduled';
+    }
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'done') return v.status === 'done';
+    if (currentFilter === 'overdue') return v.status === 'overdue';
+    if (currentFilter === 'upcoming') return v.status === 'upcoming';
+    return true;
+  });
+  const done = allVaccines.filter(v => v.status === 'done').length;
+  const overdue = allVaccines.filter(v => v.status === 'overdue').length;
+  const upcoming = allVaccines.filter(v => v.status === 'upcoming').length;
+  document.getElementById('done-count').textContent = done;
+  document.getElementById('overdue-count').textContent = overdue;
+  document.getElementById('upcoming-count').textContent = upcoming;
+
+  const el = document.getElementById('vaccine-records');
+  if (!filtered.length) { el.innerHTML = '<p class="muted text-sm" style="padding:12px 0">No records. Generate schedule first.</p>'; return; }
+  el.innerHTML = filtered.map((v, i) => `
+    <div class="list-item">
+      <span style="font-size:22px">${v.status === 'done' ? '✅' : v.status === 'overdue' ? '⚠️' : '📅'}</span>
+      <div style="flex:1">
+        <div class="fw-6">${v.name}</div>
+        <div class="muted">${v.desc || ''} · ${v.given ? `Given: ${v.givenDate}` : `Due: ${v.dueDate}`}${v.doc ? ` · ${v.doc}` : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="badge ${v.status === 'done' ? 'green' : v.status === 'overdue' ? 'red' : 'yellow'}">${v.status}</span>
+        ${!v.given ? `<button class="btn btn-sm btn-success" onclick="markDone(${allVaccines.indexOf(v)})">Mark Done</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// Load on start
+const profile = JSON.parse(localStorage.getItem('child_profile') || 'null');
+if (profile) { document.getElementById('child-name').value = profile.name; document.getElementById('child-dob').value = profile.dob; }
+allVaccines = JSON.parse(localStorage.getItem('vaccine_records') || '[]');
+renderRecords();
+</script>
+</body>
+</html>

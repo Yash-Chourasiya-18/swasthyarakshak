@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Safe Zone | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.map-area{background:linear-gradient(135deg,#dbeafe,#e0f2fe);border-radius:16px;height:320px;position:relative;overflow:hidden;margin-bottom:20px;border:1px solid var(--gray-200)}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.2) 1px,transparent 1px);background-size:40px 40px}
+.map-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.home-marker{font-size:36px;animation:hoverFloat 2s ease-in-out infinite}
+@keyframes hoverFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.safe-zone-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:3px dashed rgba(14,165,233,.6);border-radius:50%;animation:zoneBreath 2s ease-in-out infinite}
+.patient-dot{position:absolute;font-size:24px;cursor:move;user-select:none}
+.zone-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:.2s}
+.zone-status{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+@keyframes zoneBreath{0%,100%{opacity:.7}50%{opacity:1}}
+.alert-banner{position:fixed;top:0;left:0;right:0;padding:20px;background:var(--danger);color:white;font-size:18px;font-weight:700;text-align:center;z-index:999;display:none;animation:slideDown .3s ease}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="alert-banner" class="alert-banner">
+  🚨 SAFE ZONE BREACH! Patient has left the designated area! <button onclick="dismissAlert()" style="background:white;color:var(--danger);border:none;padding:4px 12px;border-radius:4px;font-weight:700;margin-left:16px;cursor:pointer">Dismiss</button>
+</div>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🏠 Safe Zone Alerts</h1><p class="page-sub">Patient ghar se bahar nikle toh notify</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-val" id="zone-status-val">Inside</div><div class="stat-lbl">Current Zone Status</div></div>
+      <div class="stat-card blue"><div class="stat-icon">📍</div><div class="stat-val" id="active-zones">2</div><div class="stat-lbl">Active Safe Zones</div></div>
+      <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-val" id="breach-count">0</div><div class="stat-lbl">Breaches Today</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">🗺️ Live Zone Map</div>
+          <div class="map-area">
+            <div class="map-grid"></div>
+            <div class="safe-zone-ring" id="zone-ring" style="width:160px;height:160px"></div>
+            <div class="map-center">
+              <div class="home-marker">🏠</div>
+              <div style="font-size:11px;font-weight:700;color:var(--primary);margin-top:4px">Safe Zone</div>
+            </div>
+            <div class="patient-dot" id="patient-dot" style="top:45%;left:48%">🧓</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-success" onclick="movePatientInside()">📍 Mark as Inside</button>
+            <button class="btn btn-danger" onclick="movePatientOutside()">⚠️ Simulate Exit</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">➕ Add Safe Zone</div>
+          <div class="form-group"><label>Zone Name</label><input type="text" id="zone-name" placeholder="Home, Hospital, Park..." class="input"></div>
+          <div class="form-group"><label>Zone Type</label>
+            <select id="zone-type" class="input"><option>Home 🏠</option><option>Hospital 🏥</option><option>Park 🌳</option><option>School 🏫</option><option>Office 🏢</option><option>Custom 📍</option></select>
+          </div>
+          <div class="form-group"><label>Address / Location</label><input type="text" id="zone-addr" placeholder="Full address or landmark" class="input"></div>
+          <div class="form-group"><label>Safe Radius (meters)</label>
+            <input type="range" id="zone-radius" min="50" max="1000" value="200" class="w-full" oninput="document.getElementById('radius-val').textContent=this.value+'m'; updateRing(this.value)">
+            <div class="flex-between mt-1"><span class="muted text-xs">50m</span><strong id="radius-val">200m</strong><span class="muted text-xs">1000m</span></div>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" checked> Notify on exit</label>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" checked> Notify on re-entry</label>
+          </div>
+          <button class="btn btn-primary w-full" onclick="addZone()">✅ Add Safe Zone</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🗂️ Active Safe Zones</div>
+          <div id="zones-list">
+            <div class="zone-card"><div class="zone-status" style="background:var(--success)"></div><div style="flex:1"><div class="fw-6">🏠 Home</div><div class="muted">123, Sector 15, Noida · Radius: 200m</div></div><span class="badge green">Active</span></div>
+            <div class="zone-card"><div class="zone-status" style="background:var(--primary)"></div><div style="flex:1"><div class="fw-6">🏥 Apollo Hospital</div><div class="muted">Sector 26, Noida · Radius: 100m</div></div><span class="badge blue">Active</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Zone Breach History</div>
+      <div id="breach-log"><p class="muted text-sm" style="padding:8px 0">No breaches recorded. Patient is safe.</p></div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('safe-zone');
+
+function updateRing(val) {
+  const ring = document.getElementById('zone-ring');
+  const size = Math.max(80, Math.min(280, parseInt(val) / 3));
+  ring.style.width = size + 'px'; ring.style.height = size + 'px';
+}
+
+function movePatientInside() {
+  const dot = document.getElementById('patient-dot');
+  dot.style.top = '44%'; dot.style.left = '47%';
+  document.getElementById('zone-status-val').textContent = 'Inside ✅';
+  document.getElementById('zone-status-val').parentElement.className = 'stat-card green';
+  document.getElementById('alert-banner').style.display = 'none';
+}
+
+function movePatientOutside() {
+  const dot = document.getElementById('patient-dot');
+  dot.style.top = '15%'; dot.style.left = '80%';
+  document.getElementById('zone-status-val').textContent = '⚠️ OUTSIDE!';
+  document.getElementById('zone-status-val').parentElement.className = 'stat-card red';
+  document.getElementById('alert-banner').style.display = 'block';
+  const count = parseInt(document.getElementById('breach-count').textContent) + 1;
+  document.getElementById('breach-count').textContent = count;
+  saveData('zone_breaches', { zone: 'Home', msg: 'Patient left safe zone boundary.' });
+  loadBreachLog();
+  setTimeout(() => {
+    if (confirm('🚨 SAFE ZONE BREACH!\nPatient has left the Home zone.\nSend alert to contacts?')) {
+      alert('✅ Alert sent to:\n• Rahul (Son): +91 98765 43210\n• Priya (Daughter): +91 91234 56789');
+    }
+  }, 500);
+}
+
+function dismissAlert() {
+  document.getElementById('alert-banner').style.display = 'none';
+}
+
+function addZone() {
+  const name = document.getElementById('zone-name').value;
+  const type = document.getElementById('zone-type').value;
+  const addr = document.getElementById('zone-addr').value;
+  const radius = document.getElementById('zone-radius').value;
+  if (!name) return alert('Enter zone name.');
+  document.getElementById('zones-list').innerHTML += `<div class="zone-card"><div class="zone-status" style="background:var(--primary)"></div><div style="flex:1"><div class="fw-6">${type.split(' ')[1] || '📍'} ${name}</div><div class="muted">${addr || 'GPS location'} · Radius: ${radius}m</div></div><span class="badge blue">Active</span></div>`;
+  const count = parseInt(document.getElementById('active-zones').textContent) + 1;
+  document.getElementById('active-zones').textContent = count;
+  document.getElementById('zone-name').value = '';
+  document.getElementById('zone-addr').value = '';
+}
+
+function loadBreachLog() {
+  const data = loadData('zone_breaches');
+  renderLog('breach-log', data, d => `<div class="list-item"><span style="font-size:22px">🚨</span><div style="flex:1"><div class="fw-6">${d.msg}</div><div class="muted">${d.time}</div></div><span class="badge red">Breach</span></div>`);
+}
+loadBreachLog();
+</script>
+</body>
+</html>

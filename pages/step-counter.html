@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Step Counter | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🏃 Step Counter & Activity Tracker</h1><p class="page-sub">Daily activity & fitness tracking</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">🏃</div><div class="stat-val" id="today-steps">0</div><div class="stat-lbl">Steps Today</div><span class="badge yellow" id="step-pct">0% of goal</span></div>
+      <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-val" id="calories">0</div><div class="stat-lbl">Calories Burned</div></div>
+      <div class="stat-card blue"><div class="stat-icon">📍</div><div class="stat-val" id="distance">0 km</div><div class="stat-lbl">Distance Covered</div></div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="flex-between mb-2"><span class="card-title" style="margin-bottom:0">Today's Progress</span><span class="muted text-sm" id="steps-remaining">10,000 steps remaining</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="steps-bar" style="width:0%;background:#22c55e"></div></div>
+      <div class="flex-between mt-2"><span class="text-sm muted">0</span><span class="text-sm muted">Goal: <strong id="goal-display">10,000</strong> steps</span></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Activity</div>
+        <div class="form-group"><label>Activity Type</label>
+          <select id="activity-type" class="input">
+            <option value="walking">🚶 Walking</option><option value="running">🏃 Running</option>
+            <option value="cycling">🚴 Cycling</option><option value="swimming">🏊 Swimming</option>
+            <option value="yoga">🧘 Yoga</option><option value="gym">💪 Gym/Workout</option>
+            <option value="dancing">💃 Dancing</option><option value="sports">⚽ Sports</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Steps (if applicable)</label><input type="number" id="steps-input" placeholder="e.g. 5000" class="input"></div>
+          <div class="form-group"><label>Duration (minutes)</label><input type="number" id="duration-input" placeholder="e.g. 30" class="input"></div>
+        </div>
+        <div class="form-group"><label>Intensity</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="selectIntensity(this,'low')">🟢 Low</span>
+            <span class="tag" onclick="selectIntensity(this,'moderate')">🟡 Moderate</span>
+            <span class="tag" onclick="selectIntensity(this,'high')">🔴 High</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="logActivity()">💾 Save Activity</button>
+        <div id="activity-alert" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Set Step Goal</div>
+        <div class="form-group"><label>Daily Step Goal</label>
+          <select id="step-goal-input" class="input">
+            <option value="5000">5,000 (Sedentary)</option>
+            <option value="7500">7,500 (Light Active)</option>
+            <option value="10000" selected>10,000 (Recommended)</option>
+            <option value="12500">12,500 (Active)</option>
+            <option value="15000">15,000 (Very Active)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Weight (kg) — for calorie calculation</label><input type="number" id="weight-input" placeholder="e.g. 70" class="input"></div>
+        <button class="btn btn-primary w-full" onclick="saveStepGoal()">Save Goal</button>
+        <div class="divider"></div>
+        <div class="card-title" style="font-size:14px;margin-bottom:12px">Weekly Steps</div>
+        <div class="bar-chart" id="steps-chart"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Activity Log</div>
+      <div id="activity-log"></div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('steps');
+let stepGoal = parseInt(localStorage.getItem('step_goal') || '10000');
+let weight = parseInt(localStorage.getItem('user_weight') || '70');
+let selectedIntensity = 'moderate';
+
+function selectIntensity(el, val) {
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected'); selectedIntensity = val;
+}
+
+function saveStepGoal() {
+  stepGoal = parseInt(document.getElementById('step-goal-input').value);
+  weight = parseInt(document.getElementById('weight-input').value) || 70;
+  localStorage.setItem('step_goal', stepGoal);
+  localStorage.setItem('user_weight', weight);
+  updateDisplay();
+}
+
+function calcCalories(steps, mins, type, intensity) {
+  const mets = { walking: 3.5, running: 8, cycling: 6, swimming: 7, yoga: 2.5, gym: 5, dancing: 5, sports: 6 };
+  const met = mets[type] || 4;
+  const multiplier = { low: 0.8, moderate: 1, high: 1.3 }[intensity] || 1;
+  return Math.round(met * multiplier * weight * (mins / 60));
+}
+
+function calcDistance(steps, type) {
+  const strideLen = { walking: 0.75, running: 1.2, cycling: 0, swimming: 0, yoga: 0, gym: 0, dancing: 0.5, sports: 0.8 };
+  return ((steps * (strideLen[type] || 0.75)) / 1000).toFixed(2);
+}
+
+function logActivity() {
+  const steps = parseInt(document.getElementById('steps-input').value) || 0;
+  const mins = parseInt(document.getElementById('duration-input').value) || 0;
+  const type = document.getElementById('activity-type').value;
+  if (!steps && !mins) return alert('Please enter steps or duration.');
+  const calories = calcCalories(steps, mins, type, selectedIntensity);
+  const distance = calcDistance(steps, type);
+  saveData('activities', { steps, mins, type, calories, distance, intensity: selectedIntensity });
+  const alertBox = document.getElementById('activity-alert');
+  alertBox.className = 'alert alert-green';
+  alertBox.textContent = `✅ Logged! ${steps.toLocaleString()} steps · ${calories} cal · ${distance} km`;
+  document.getElementById('steps-input').value = '';
+  document.getElementById('duration-input').value = '';
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('activities');
+  const todayStr = new Date().toDateString();
+  const todayData = data.filter(d => new Date(d.time).toDateString() === todayStr);
+  const totalSteps = todayData.reduce((a, d) => a + (d.steps || 0), 0);
+  const totalCal = todayData.reduce((a, d) => a + (d.calories || 0), 0);
+  const totalDist = todayData.reduce((a, d) => a + parseFloat(d.distance || 0), 0);
+  document.getElementById('today-steps').textContent = totalSteps.toLocaleString();
+  document.getElementById('calories').textContent = totalCal;
+  document.getElementById('distance').textContent = `${totalDist.toFixed(1)} km`;
+  document.getElementById('goal-display').textContent = stepGoal.toLocaleString();
+  const pct = Math.min((totalSteps / stepGoal) * 100, 100);
+  document.getElementById('steps-bar').style.width = `${pct}%`;
+  document.getElementById('step-pct').textContent = `${Math.round(pct)}% of goal`;
+  document.getElementById('steps-remaining').textContent = `${Math.max(stepGoal - totalSteps, 0).toLocaleString()} steps remaining`;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const vals = Array.from({length:7}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    const ds = d.toDateString();
+    return data.filter(x => new Date(x.time).toDateString() === ds).reduce((a, x) => a + (x.steps || 0), 0);
+  });
+  const today = new Date().getDay();
+  renderBarChart('steps-chart', vals, Array.from({length:7}, (_, i) => days[(today - 6 + i + 7) % 7]), '#22c55e');
+  renderLog('activity-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:22px">${{walking:'🚶',running:'🏃',cycling:'🚴',swimming:'🏊',yoga:'🧘',gym:'💪',dancing:'💃',sports:'⚽'}[d.type] || '🏃'}</span>
+      <div style="flex:1"><div class="fw-6">${d.type.charAt(0).toUpperCase() + d.type.slice(1)} · ${d.steps?.toLocaleString() || 0} steps</div><div class="muted">${d.mins || 0} min · ${d.calories} cal · ${d.distance} km</div></div>
+      <span class="badge ${d.intensity === 'high' ? 'red' : d.intensity === 'low' ? 'green' : 'yellow'}">${d.intensity}</span>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

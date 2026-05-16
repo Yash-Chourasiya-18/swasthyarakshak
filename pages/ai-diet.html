@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Diet Planner | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.meal-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start}
+.meal-icon{font-size:32px;flex-shrink:0}
+.meal-time{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--primary);letter-spacing:.5px}
+.meal-name{font-weight:700;font-size:14px;margin:2px 0}
+.cal-tag{background:var(--primary-light);color:var(--primary-dark);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.nutrient-bar{margin-top:8px}
+.nutrient-label{display:flex;justify-content:space-between;font-size:11px;color:var(--gray-500);margin-bottom:3px}
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.macro-box{background:var(--gray-50);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--gray-100)}
+.macro-val{font-size:18px;font-weight:800}
+.macro-lbl{font-size:10px;color:var(--gray-500);margin-top:2px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🥗 AI Diet Planner</h1><p class="page-sub">Health condition ke basis par personalized diet</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚙️ Your Profile</div>
+        <div class="form-row">
+          <div class="form-group"><label>Age</label><input type="number" id="d-age" placeholder="30" class="input"></div>
+          <div class="form-group"><label>Gender</label><select id="d-gender" class="input"><option>Male</option><option>Female</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Weight (kg)</label><input type="number" id="d-weight" placeholder="70" class="input"></div>
+          <div class="form-group"><label>Height (cm)</label><input type="number" id="d-height" placeholder="170" class="input"></div>
+        </div>
+        <div class="form-group"><label>Activity Level</label>
+          <select id="d-activity" class="input">
+            <option value="1.2">Sedentary</option><option value="1.375">Lightly Active</option>
+            <option value="1.55" selected>Moderately Active</option><option value="1.725">Very Active</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Goal</label>
+          <select id="d-goal" class="input">
+            <option value="maintain">Maintain Weight</option><option value="lose">Lose Weight</option>
+            <option value="gain">Gain Muscle</option><option value="diabetic">Diabetic Diet</option>
+            <option value="cardiac">Heart-Healthy Diet</option><option value="kidney">Kidney-Friendly Diet</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Food Preference</label>
+          <select id="d-pref" class="input">
+            <option>Pure Vegetarian 🌱</option><option>Vegetarian + Eggs 🥚</option>
+            <option>Non-Vegetarian 🍗</option><option>Jain 🙏</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Allergies/Avoid</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">🥜 Peanuts</span>
+            <span class="tag" onclick="toggleTag(this)">🥛 Dairy</span>
+            <span class="tag" onclick="toggleTag(this)">🌾 Gluten</span>
+            <span class="tag" onclick="toggleTag(this)">🦐 Shellfish</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="generateDiet()">🥗 Generate My Diet Plan</button>
+      </div>
+
+      <div id="diet-result" style="display:none">
+        <div class="card mb-4">
+          <div class="card-title">📊 Daily Nutrition Target</div>
+          <div class="macro-grid">
+            <div class="macro-box"><div class="macro-val" id="m-cal">–</div><div class="macro-lbl">Calories</div></div>
+            <div class="macro-box"><div class="macro-val" id="m-protein" style="color:var(--primary)">–g</div><div class="macro-lbl">Protein</div></div>
+            <div class="macro-box"><div class="macro-val" id="m-carbs" style="color:var(--warning)">–g</div><div class="macro-lbl">Carbs</div></div>
+            <div class="macro-box"><div class="macro-val" id="m-fat" style="color:var(--success)">–g</div><div class="macro-lbl">Fat</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🍽️ Today's Meal Plan</div>
+          <div id="meal-plan"></div>
+        </div>
+      </div>
+
+      <div id="diet-placeholder" class="card" style="text-align:center;padding:48px">
+        <div style="font-size:56px;margin-bottom:16px">🥗</div>
+        <p class="fw-6">Fill your profile and generate a personalized Indian diet plan!</p>
+        <p class="muted text-sm mt-2">Based on WHO & ICMR nutritional guidelines</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ai-diet');
+
+const MEAL_PLANS = {
+  vegetarian: {
+    maintain: [
+      { time: 'Early Morning', icon: '🌅', name: 'Warm lemon water + 5 soaked almonds', cal: 60, protein: 2, carbs: 3, fat: 4 },
+      { time: 'Breakfast', icon: '🍳', name: 'Vegetable oats upma + buttermilk', cal: 320, protein: 12, carbs: 45, fat: 8 },
+      { time: 'Mid-Morning', icon: '🍎', name: 'Seasonal fruit (apple/banana/papaya)', cal: 90, protein: 1, carbs: 22, fat: 0 },
+      { time: 'Lunch', icon: '🍱', name: '2 roti + dal + sabzi + curd + salad', cal: 480, protein: 18, carbs: 68, fat: 12 },
+      { time: 'Evening Snack', icon: '☕', name: 'Roasted chana + green tea (no sugar)', cal: 120, protein: 7, carbs: 18, fat: 2 },
+      { time: 'Dinner', icon: '🌙', name: 'Khichdi + raita + one sabzi', cal: 380, protein: 14, carbs: 55, fat: 8 },
+    ],
+    diabetic: [
+      { time: 'Early Morning', icon: '🌅', name: 'Methi water + 2 walnuts', cal: 50, protein: 2, carbs: 2, fat: 5 },
+      { time: 'Breakfast', icon: '🍳', name: 'Moong dal cheela (2) + pudina chutney', cal: 280, protein: 14, carbs: 32, fat: 6 },
+      { time: 'Mid-Morning', icon: '🍎', name: 'Guava or 1 small orange', cal: 60, protein: 1, carbs: 14, fat: 0 },
+      { time: 'Lunch', icon: '🍱', name: '1 roti (multigrain) + rajma + cucumber salad', cal: 380, protein: 16, carbs: 52, fat: 8 },
+      { time: 'Evening Snack', icon: '☕', name: 'Makhana (fox nuts) roasted + green tea', cal: 100, protein: 4, carbs: 16, fat: 1 },
+      { time: 'Dinner', icon: '🌙', name: 'Brown rice (half cup) + palak paneer + salad', cal: 350, protein: 15, carbs: 45, fat: 10 },
+    ],
+    cardiac: [
+      { time: 'Early Morning', icon: '🌅', name: 'Arjuna bark tea + 4 almonds', cal: 50, protein: 2, carbs: 2, fat: 4 },
+      { time: 'Breakfast', icon: '🍳', name: 'Oats porridge with berries + flaxseeds', cal: 300, protein: 10, carbs: 48, fat: 6 },
+      { time: 'Mid-Morning', icon: '🍎', name: 'Pomegranate seeds (1 cup)', cal: 80, protein: 1, carbs: 18, fat: 0 },
+      { time: 'Lunch', icon: '🍱', name: '2 multigrain roti + arhar dal + steamed broccoli', cal: 420, protein: 18, carbs: 60, fat: 8 },
+      { time: 'Evening Snack', icon: '☕', name: 'Unsalted mixed nuts (small handful)', cal: 140, protein: 5, carbs: 6, fat: 12 },
+      { time: 'Dinner', icon: '🌙', name: 'Quinoa khichdi + lauki sabzi + salad', cal: 360, protein: 14, carbs: 50, fat: 8 },
+    ]
+  }
+};
+
+function generateDiet() {
+  const age = parseInt(document.getElementById('d-age').value) || 30;
+  const gender = document.getElementById('d-gender').value;
+  const weight = parseInt(document.getElementById('d-weight').value) || 70;
+  const height = parseInt(document.getElementById('d-height').value) || 170;
+  const actFactor = parseFloat(document.getElementById('d-activity').value);
+  const goal = document.getElementById('d-goal').value;
+  const bmr = gender === 'Male' ? 10*weight + 6.25*height - 5*age + 5 : 10*weight + 6.25*height - 5*age - 161;
+  let tdee = Math.round(bmr * actFactor);
+  if (goal === 'lose') tdee -= 500;
+  if (goal === 'gain') tdee += 300;
+  const protein = Math.round(weight * 1.2);
+  const fat = Math.round(tdee * 0.25 / 9);
+  const carbs = Math.round((tdee - protein*4 - fat*9) / 4);
+
+  document.getElementById('m-cal').textContent = tdee;
+  document.getElementById('m-protein').textContent = protein + 'g';
+  document.getElementById('m-carbs').textContent = carbs + 'g';
+  document.getElementById('m-fat').textContent = fat + 'g';
+
+  const planKey = goal === 'diabetic' ? 'diabetic' : goal === 'cardiac' ? 'cardiac' : 'maintain';
+  const meals = MEAL_PLANS.vegetarian[planKey] || MEAL_PLANS.vegetarian.maintain;
+
+  document.getElementById('meal-plan').innerHTML = meals.map(m => `
+    <div class="meal-card">
+      <div class="meal-icon">${m.icon}</div>
+      <div style="flex:1">
+        <div class="meal-time">${m.time}</div>
+        <div class="meal-name">${m.name}</div>
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="cal-tag">🔥 ${m.cal} kcal</span>
+          <span style="font-size:11px;color:var(--gray-500)">P: ${m.protein}g · C: ${m.carbs}g · F: ${m.fat}g</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('diet-result').style.display = 'block';
+  document.getElementById('diet-placeholder').style.display = 'none';
+}
+</script>
+</body>
+</html>

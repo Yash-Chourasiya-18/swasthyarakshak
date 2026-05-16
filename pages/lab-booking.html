@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lab Test Booking | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.test-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:16px;transition:.2s;cursor:pointer;position:relative}
+.test-card:hover{border-color:var(--primary);box-shadow:0 4px 16px rgba(14,165,233,.12)}
+.test-card.selected{border-color:var(--primary);background:var(--primary-light)}
+.test-card .check-mark{position:absolute;top:12px;right:12px;width:22px;height:22px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;display:none}
+.test-card.selected .check-mark{display:flex}
+.lab-row{display:flex;align-items:center;gap:14px;padding:14px;background:white;border:1px solid var(--gray-200);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:.2s}
+.lab-row:hover{border-color:var(--primary)}
+.lab-row.chosen{border-color:var(--success);background:var(--success-light)}
+.lab-logo{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--primary-light)}
+.home-badge{background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.discount-tag{background:var(--danger-light);color:#991b1b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.cart-summary{background:linear-gradient(135deg,#0f172a,#1e293b);color:white;border-radius:12px;padding:20px;position:sticky;top:80px}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.step-circle.done{background:var(--success);color:white}
+.step-circle.active{background:var(--primary);color:white}
+.step-circle.pending{background:var(--gray-200);color:var(--gray-500)}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🧪 Lab Test Booking</h1><p class="page-sub">Ghar baithe blood test book karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <!-- Progress Steps -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:24px;background:white;border:1px solid var(--gray-200);border-radius:12px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;flex:1"><div class="step-circle active" id="s1">1</div><div><div class="fw-6 text-sm">Select Tests</div><div class="muted" style="font-size:11px">Choose from 100+ tests</div></div></div>
+      <div style="flex:0 0 30px;height:2px;background:var(--gray-200)"></div>
+      <div style="display:flex;align-items:center;gap:10px;flex:1"><div class="step-circle pending" id="s2">2</div><div><div class="fw-6 text-sm">Choose Lab</div><div class="muted" style="font-size:11px">Compare prices</div></div></div>
+      <div style="flex:0 0 30px;height:2px;background:var(--gray-200)"></div>
+      <div style="display:flex;align-items:center;gap:10px;flex:1"><div class="step-circle pending" id="s3">3</div><div><div class="fw-6 text-sm">Schedule</div><div class="muted" style="font-size:11px">Home or lab visit</div></div></div>
+      <div style="flex:0 0 30px;height:2px;background:var(--gray-200)"></div>
+      <div style="display:flex;align-items:center;gap:10px;flex:1"><div class="step-circle pending" id="s4">4</div><div><div class="fw-6 text-sm">Confirm</div><div class="muted" style="font-size:11px">Payment & booking</div></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <!-- STEP 1: Select Tests -->
+        <div id="step-1-section">
+          <div class="card mb-4">
+            <div class="card-title">🔍 Search Tests</div>
+            <input type="text" id="test-search" class="input mb-3" placeholder="Search by test name or health condition..." oninput="filterTests()">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="category-filters">
+              <button class="tag selected" onclick="filterCat('all',this)">All</button>
+              <button class="tag" onclick="filterCat('diabetes',this)">🩸 Diabetes</button>
+              <button class="tag" onclick="filterCat('heart',this)">❤️ Heart</button>
+              <button class="tag" onclick="filterCat('thyroid',this)">🦋 Thyroid</button>
+              <button class="tag" onclick="filterCat('liver',this)">🫀 Liver</button>
+              <button class="tag" onclick="filterCat('kidney',this)">🫘 Kidney</button>
+              <button class="tag" onclick="filterCat('general',this)">📋 General</button>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-title">🏥 Popular Health Packages</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
+              <div class="test-card" onclick="addPackage('full-body')">
+                <div class="check-mark">✓</div>
+                <div style="font-size:28px;margin-bottom:6px">🧬</div>
+                <div class="fw-6">Full Body Checkup</div>
+                <div class="muted text-sm">85 tests included</div>
+                <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+                  <span class="price-tag" style="background:var(--success-light);color:#166534;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">₹999</span>
+                  <del class="muted text-xs">₹3,500</del>
+                  <span class="discount-tag">71% off</span>
+                </div>
+              </div>
+              <div class="test-card" onclick="addPackage('diabetes')">
+                <div class="check-mark">✓</div>
+                <div style="font-size:28px;margin-bottom:6px">🩸</div>
+                <div class="fw-6">Diabetes Package</div>
+                <div class="muted text-sm">HbA1c + FBS + PPBS + Lipids</div>
+                <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+                  <span class="price-tag" style="background:var(--success-light);color:#166534;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">₹499</span>
+                  <del class="muted text-xs">₹1,800</del>
+                  <span class="discount-tag">72% off</span>
+                </div>
+              </div>
+              <div class="test-card" onclick="addPackage('cardiac')">
+                <div class="check-mark">✓</div>
+                <div style="font-size:28px;margin-bottom:6px">❤️</div>
+                <div class="fw-6">Cardiac Risk Package</div>
+                <div class="muted text-sm">Lipid + Homocysteine + hs-CRP</div>
+                <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+                  <span class="price-tag" style="background:var(--success-light);color:#166534;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">₹799</span>
+                  <del class="muted text-xs">₹2,400</del>
+                  <span class="discount-tag">67% off</span>
+                </div>
+              </div>
+              <div class="test-card" onclick="addPackage('thyroid')">
+                <div class="check-mark">✓</div>
+                <div style="font-size:28px;margin-bottom:6px">🦋</div>
+                <div class="fw-6">Thyroid Package</div>
+                <div class="muted text-sm">TSH + T3 + T4 + Anti-TPO</div>
+                <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+                  <span class="price-tag" style="background:var(--success-light);color:#166634;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">₹349</span>
+                  <del class="muted text-xs">₹1,200</del>
+                  <span class="discount-tag">71% off</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🔬 Individual Tests</div>
+            <div id="tests-grid" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Cart + Lab + Schedule -->
+      <div>
+        <div class="cart-summary mb-4">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-weight:700;font-size:16px">🛒 Cart (<span id="cart-count">0</span> items)</div>
+            <button onclick="clearCart()" style="background:rgba(255,255,255,.15);color:white;border:none;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer">Clear</button>
+          </div>
+          <div id="cart-items"><p style="opacity:.5;font-size:13px">No tests selected yet.</p></div>
+          <div class="divider" style="border-color:rgba(255,255,255,.15);margin:16px 0"></div>
+          <div class="flex-between" style="font-size:18px;font-weight:800"><span>Total:</span><span id="cart-total">₹0</span></div>
+          <div id="cart-savings" style="color:#4ade80;font-size:12px;margin-top:4px"></div>
+          <button class="btn btn-primary w-full mt-4" onclick="goToStep2()">Proceed to Lab Selection →</button>
+        </div>
+
+        <div class="card mb-4" id="lab-selection" style="display:none">
+          <div class="card-title">🏥 Choose Lab</div>
+          <div class="lab-row" id="lab-thyrocare" onclick="chooseLab('Thyrocare',this)">
+            <div class="lab-logo">🔬</div>
+            <div style="flex:1"><div class="fw-6">Thyrocare</div><div class="muted text-sm">Home collection · Pan-India</div><div style="margin-top:4px;display:flex;gap:6px"><span class="home-badge">🏠 Home</span><span style="font-size:11px;color:var(--success);font-weight:600">⭐ 4.8</span></div></div>
+            <div style="text-align:right"><div class="fw-6" id="thyrocare-price">₹–</div><div class="muted text-xs">Reports in 24h</div></div>
+          </div>
+          <div class="lab-row" id="lab-lal" onclick="chooseLab('Lal Path Labs',this)">
+            <div class="lab-logo">🧪</div>
+            <div style="flex:1"><div class="fw-6">Lal Path Labs</div><div class="muted text-sm">Home + Walk-in · 2,000+ centers</div><div style="margin-top:4px;display:flex;gap:6px"><span class="home-badge">🏠 Home</span><span style="font-size:11px;color:var(--success);font-weight:600">⭐ 4.7</span></div></div>
+            <div style="text-align:right"><div class="fw-6" id="lal-price">₹–</div><div class="muted text-xs">Reports in 6h</div></div>
+          </div>
+          <div class="lab-row" id="lab-dr" onclick="chooseLab('Dr. Lal PathLabs',this)">
+            <div class="lab-logo">🏥</div>
+            <div style="flex:1"><div class="fw-6">SRL Diagnostics</div><div class="muted text-sm">Walk-in · NABL Accredited</div><div style="margin-top:4px"><span style="font-size:11px;color:var(--success);font-weight:600">⭐ 4.6 · NABL ✓</span></div></div>
+            <div style="text-align:right"><div class="fw-6" id="srl-price">₹–</div><div class="muted text-xs">Reports in 4h</div></div>
+          </div>
+        </div>
+
+        <div class="card" id="schedule-section" style="display:none">
+          <div class="card-title">📅 Schedule Sample Collection</div>
+          <div class="form-group"><label>Collection Type</label>
+            <div style="display:flex;gap:10px;margin-top:6px">
+              <label style="flex:1;padding:14px;border:2px solid var(--primary);border-radius:10px;text-align:center;cursor:pointer;background:var(--primary-light)"><input type="radio" name="ctype" value="home" checked style="margin-right:6px">🏠 Home Collection<div class="muted text-xs mt-1">Phlebotomist aayega</div></label>
+              <label style="flex:1;padding:14px;border:2px solid var(--gray-200);border-radius:10px;text-align:center;cursor:pointer"><input type="radio" name="ctype" value="walkin" style="margin-right:6px">🏪 Walk-in<div class="muted text-xs mt-1">Lab mein jaao</div></label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Date</label><input type="date" id="test-date" class="input"></div>
+            <div class="form-group"><label>Time Slot</label>
+              <select id="test-time" class="input"><option>6:00 AM – 7:00 AM</option><option>7:00 AM – 8:00 AM</option><option>8:00 AM – 9:00 AM</option><option>9:00 AM – 10:00 AM</option></select>
+            </div>
+          </div>
+          <div class="form-group"><label>Patient Name</label><input type="text" id="patient-name" placeholder="Full name" class="input"></div>
+          <div class="form-group"><label>Address (for home collection)</label><textarea id="patient-addr" class="input" rows="2" placeholder="Full address with landmark"></textarea></div>
+          <div class="form-group"><label>Fasting?</label>
+            <select class="input"><option>Yes — 8 hours fasting required</option><option>No fasting needed</option></select>
+          </div>
+          <button class="btn btn-primary w-full" onclick="confirmBooking()">✅ Confirm Booking & Pay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('lab-booking');
+document.getElementById('test-date').value = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+const TESTS = [
+  { id:'cbc', name:'Complete Blood Count (CBC)', cat:'general', price:199, desc:'RBC, WBC, Platelets, Hemoglobin' },
+  { id:'fbs', name:'Fasting Blood Sugar (FBS)', cat:'diabetes', price:89, desc:'Diabetes screening' },
+  { id:'hba1c', name:'HbA1c', cat:'diabetes', price:349, desc:'3-month sugar control average' },
+  { id:'lipid', name:'Lipid Profile', cat:'heart', price:299, desc:'Cholesterol, LDL, HDL, Triglycerides' },
+  { id:'tsh', name:'TSH (Thyroid)', cat:'thyroid', price:249, desc:'Thyroid stimulating hormone' },
+  { id:'lft', name:'Liver Function Test (LFT)', cat:'liver', price:399, desc:'SGPT, SGOT, Bilirubin, Albumin' },
+  { id:'kft', name:'Kidney Function Test (KFT)', cat:'kidney', price:349, desc:'Creatinine, BUN, eGFR, Uric Acid' },
+  { id:'vitamin-d', name:'Vitamin D (25-OH)', cat:'general', price:649, desc:'Bone health & immunity' },
+  { id:'vitamin-b12', name:'Vitamin B12', cat:'general', price:399, desc:'Nerve health, energy' },
+  { id:'crp', name:'CRP (C-Reactive Protein)', cat:'heart', price:299, desc:'Inflammation marker' },
+  { id:'urine-r', name:'Urine Routine & Microscopy', cat:'kidney', price:149, desc:'Kidney & UTI screening' },
+  { id:'iron', name:'Iron Studies (Serum Iron + TIBC)', cat:'general', price:449, desc:'Anemia diagnosis' },
+];
+
+const PACKAGES = {
+  'full-body': { name: '🧬 Full Body Checkup (85 tests)', price: 999, original: 3500 },
+  'diabetes': { name: '🩸 Diabetes Package', price: 499, original: 1800 },
+  'cardiac': { name: '❤️ Cardiac Risk Package', price: 799, original: 2400 },
+  'thyroid': { name: '🦋 Thyroid Package', price: 349, original: 1200 },
+};
+
+let cart = {}, selectedLab = null;
+
+function renderTests(list) {
+  document.getElementById('tests-grid').innerHTML = list.map(t => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--gray-200);border-radius:8px;transition:.2s" id="test-row-${t.id}">
+      <div style="flex:1"><div class="fw-6">${t.name}</div><div class="muted text-sm">${t.desc}</div></div>
+      <div class="fw-6 text-sm" style="color:var(--primary)">₹${t.price}</div>
+      <button class="btn btn-sm btn-outline" id="btn-${t.id}" onclick="toggleTest('${t.id}')">+ Add</button>
+    </div>`).join('');
+}
+
+function filterTests() {
+  const q = document.getElementById('test-search').value.toLowerCase();
+  const filtered = TESTS.filter(t => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q));
+  renderTests(filtered);
+}
+
+function filterCat(cat, btn) {
+  document.querySelectorAll('#category-filters .tag').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const filtered = cat === 'all' ? TESTS : TESTS.filter(t => t.cat === cat);
+  renderTests(filtered);
+}
+
+function toggleTest(id) {
+  const test = TESTS.find(t => t.id === id);
+  if (cart[id]) { delete cart[id]; document.getElementById('btn-'+id).textContent = '+ Add'; document.getElementById('btn-'+id).className = 'btn btn-sm btn-outline'; }
+  else { cart[id] = test; document.getElementById('btn-'+id).textContent = '✓ Added'; document.getElementById('btn-'+id).className = 'btn btn-sm btn-success'; }
+  updateCart();
+}
+
+function addPackage(key) {
+  const pkg = PACKAGES[key];
+  cart['pkg-'+key] = { id: 'pkg-'+key, name: pkg.name, price: pkg.price, original: pkg.original };
+  document.querySelectorAll('.test-card').forEach(c => { if (c.onclick.toString().includes(key)) c.classList.add('selected'); });
+  updateCart();
+}
+
+function updateCart() {
+  const items = Object.values(cart);
+  document.getElementById('cart-count').textContent = items.length;
+  const total = items.reduce((a,i) => a + i.price, 0);
+  const saved = items.reduce((a,i) => a + ((i.original||i.price) - i.price), 0);
+  document.getElementById('cart-total').textContent = `₹${total}`;
+  document.getElementById('cart-savings').textContent = saved > 0 ? `💰 You save ₹${saved}!` : '';
+  document.getElementById('cart-items').innerHTML = items.length ? items.map(i => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px"><span>${i.name.replace(/[🧬🩸❤️🦋]/,'')}</span><span style="font-weight:700">₹${i.price}</span></div>`).join('') : '<p style="opacity:.5;font-size:13px">No tests selected yet.</p>';
+  // Update lab prices
+  ['thyrocare-price','lal-price','srl-price'].forEach((id, i) => { const el = document.getElementById(id); if (el) el.textContent = total > 0 ? `₹${Math.round(total * [0.95, 1, 1.05][i])}` : '₹–'; });
+}
+
+function clearCart() { cart = {}; document.querySelectorAll('.test-card').forEach(c => c.classList.remove('selected')); document.querySelectorAll('[id^="btn-"]').forEach(b => { b.textContent = '+ Add'; b.className = 'btn btn-sm btn-outline'; }); updateCart(); }
+
+function goToStep2() {
+  if (!Object.keys(cart).length) return alert('Please select at least one test.');
+  document.getElementById('lab-selection').style.display = 'block';
+  document.getElementById('s2').className = 'step-circle active';
+  document.getElementById('lab-selection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function chooseLab(name, el) {
+  document.querySelectorAll('.lab-row').forEach(r => r.classList.remove('chosen'));
+  el.classList.add('chosen'); selectedLab = name;
+  document.getElementById('schedule-section').style.display = 'block';
+  document.getElementById('s3').className = 'step-circle active';
+}
+
+function confirmBooking() {
+  const name = document.getElementById('patient-name').value;
+  const date = document.getElementById('test-date').value;
+  const time = document.getElementById('test-time').value;
+  if (!name) return alert('Enter patient name.');
+  if (!selectedLab) return alert('Please select a lab.');
+  const total = Object.values(cart).reduce((a,i) => a + i.price, 0);
+  document.getElementById('s4').className = 'step-circle done';
+  saveData('lab_bookings', { lab: selectedLab, tests: Object.keys(cart).length, total, date, time, patient: name });
+  alert(`✅ Lab Test Booked!\n\n🏥 Lab: ${selectedLab}\n👤 Patient: ${name}\n📅 Date: ${date}\n⏰ Slot: ${time}\n💰 Total: ₹${total}\n\nConfirmation SMS will be sent to your registered number.\n🔬 Reports will be available digitally within 24 hours.`);
+}
+
+renderTests(TESTS);
+</script>
+</body>
+</html>

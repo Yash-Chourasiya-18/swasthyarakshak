@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fake Medicine Detection | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.scanner-box{background:#1e293b;border-radius:16px;padding:32px;text-align:center;position:relative;overflow:hidden;margin-bottom:20px}
+.scanner-box::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(14,165,233,.05),rgba(139,92,246,.05))}
+.scan-viewfinder{width:220px;height:220px;border:3px solid var(--primary);border-radius:12px;margin:0 auto 20px;position:relative;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4)}
+.scan-corner{position:absolute;width:24px;height:24px;border-color:var(--primary);border-style:solid}
+.scan-corner.tl{top:-3px;left:-3px;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
+.scan-corner.tr{top:-3px;right:-3px;border-width:4px 4px 0 0;border-radius:0 4px 0 0}
+.scan-corner.bl{bottom:-3px;left:-3px;border-width:0 0 4px 4px;border-radius:0 0 0 4px}
+.scan-corner.br{bottom:-3px;right:-3px;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
+.scan-line{position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:scanAnim 2s linear infinite;top:10px}
+@keyframes scanAnim{0%{top:10px;opacity:1}90%{top:90%;opacity:1}100%{top:90%;opacity:0}}
+.scan-icon{font-size:48px;color:rgba(255,255,255,.3)}
+.scan-btn{background:var(--primary);color:white;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;border:none;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:10px}
+.scan-btn:hover{background:var(--primary-dark);transform:translateY(-1px)}
+.result-card{border-radius:16px;padding:24px;margin-top:20px;border:2px solid}
+.result-genuine{background:#dcfce7;border-color:var(--success)}
+.result-fake{background:#fee2e2;border-color:var(--danger)}
+.result-unverified{background:#fef3c7;border-color:var(--warning)}
+.result-icon{font-size:64px;text-align:center;display:block;margin-bottom:12px}
+.result-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:16px}
+.detail-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.detail-table td{padding:8px 12px;border-bottom:1px solid rgba(0,0,0,.08)}
+.detail-table tr:last-child td{border:none}
+.detail-table td:first-child{font-weight:600;width:45%;opacity:.7}
+.barcode-display{font-family:monospace;font-size:13px;background:rgba(0,0,0,.08);padding:8px 14px;border-radius:6px;letter-spacing:2px;margin-top:4px;display:inline-block}
+.verify-steps{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.verify-step{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500}
+.verify-step.ok{background:var(--success-light);color:#166534}
+.verify-step.fail{background:var(--danger-light);color:#991b1b}
+.verify-step.warn{background:var(--warning-light);color:#92400e}
+.med-db-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:.2s}
+.med-db-card:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(14,165,233,.12)}
+.drug-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.report-btn{background:var(--danger-light);color:#991b1b;border:1px solid #fca5a5;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px}
+.report-btn:hover{background:var(--danger);color:white}
+.input-barcode-row{display:flex;gap:10px;margin-bottom:16px}
+.barcode-visual{font-family:monospace;letter-spacing:6px;font-size:11px;color:var(--gray-400);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">💊 Fake Medicine Detector</h1><p class="page-sub">Barcode verify karke authentic medicine confirm karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <div class="alert alert-yellow mb-4">⚠️ <strong>Important:</strong> Always buy medicines from licensed pharmacies. Counterfeit drugs can be life-threatening.</div>
+
+    <div class="grid-2">
+      <!-- LEFT: Scanner -->
+      <div>
+        <div class="scanner-box">
+          <p style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Live Barcode Scanner</p>
+          <div class="scan-viewfinder" id="viewfinder">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-line" id="scan-line" style="display:none"></div>
+            <span class="scan-icon" id="scan-icon">📷</span>
+            <video id="camera-feed" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:8px"></video>
+          </div>
+          <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:16px" id="cam-status">Camera permission needed to scan</p>
+          <button class="scan-btn" id="cam-btn" onclick="toggleCamera()">📷 Start Camera Scan</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⌨️ Manual Barcode Entry</div>
+          <p class="muted text-sm mb-4">Type or paste the barcode number from the medicine box</p>
+          <div class="input-barcode-row">
+            <input type="text" id="barcode-input" class="input" placeholder="e.g. 8901234567890" maxlength="20" style="font-family:monospace;letter-spacing:2px;font-size:15px;flex:1">
+            <button class="btn btn-primary" onclick="verifyManual()">🔍 Verify</button>
+          </div>
+          <div class="barcode-visual" id="barcode-visual">| | | | | | | | | | | | |</div>
+          <div class="divider"></div>
+          <p class="card-title" style="font-size:14px">🧪 Test with Sample Barcodes</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <button class="tag" onclick="fillBarcode('8901234567890')">Crocin (Genuine)</button>
+            <button class="tag" onclick="fillBarcode('8907654321098')">Metformin (Genuine)</button>
+            <button class="tag" onclick="fillBarcode('FAKE123456789')">⚠️ Fake Sample</button>
+            <button class="tag" onclick="fillBarcode('9999999999999')">Unknown Drug</button>
+            <button class="tag" onclick="fillBarcode('8901298765432')">Azithromycin</button>
+            <button class="tag" onclick="fillBarcode('8900112233445')">Paracetamol (Expired)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results -->
+      <div>
+        <div id="result-area">
+          <div class="card" style="text-align:center;padding:40px">
+            <div style="font-size:56px;margin-bottom:16px">🔬</div>
+            <p class="fw-6">Scan or enter barcode to verify medicine</p>
+            <p class="muted text-sm mt-2">We'll check against government-verified drug database (CDSCO India)</p>
+          </div>
+        </div>
+
+        <div class="card mt-4" id="report-section" style="display:none">
+          <div class="card-title" style="color:var(--danger)">🚨 Report Fake Medicine</div>
+          <p class="muted text-sm mb-3">Report counterfeit drugs to authorities to protect others</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="report-btn" onclick="reportToAuthority('CDSCO')">📮 Report to CDSCO</button>
+            <button class="report-btn" onclick="reportToAuthority('Police')">👮 Report to Police</button>
+            <button class="report-btn" onclick="reportToAuthority('Pharmacy Council')">🏥 Report Pharmacy</button>
+          </div>
+          <div class="alert alert-blue mt-3">📞 CDSCO Helpline: <strong>1800-11-4949</strong> (Toll Free)<br>📧 Email: <strong>cdsco-nic@nic.in</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medicine DB -->
+    <div class="card mt-4">
+      <div class="card-title">📚 Common Medicines — Quick Verify</div>
+      <div class="grid-2">
+        <div>
+          <div class="med-db-card" onclick="fillBarcode('8901234567890')">
+            <div class="drug-icon" style="background:var(--success-light)">💊</div>
+            <div style="flex:1"><div class="fw-6">Crocin / Paracetamol 500mg</div><div class="muted text-sm">GSK · Barcode: 8901234567890</div></div>
+            <span class="badge green">✅ Genuine</span>
+          </div>
+          <div class="med-db-card" onclick="fillBarcode('8907654321098')">
+            <div class="drug-icon" style="background:var(--primary-light)">🩸</div>
+            <div style="flex:1"><div class="fw-6">Metformin 500mg (Glucophage)</div><div class="muted text-sm">Merck · Barcode: 8907654321098</div></div>
+            <span class="badge green">✅ Genuine</span>
+          </div>
+          <div class="med-db-card" onclick="fillBarcode('8901298765432')">
+            <div class="drug-icon" style="background:var(--purple-light)">🫁</div>
+            <div style="flex:1"><div class="fw-6">Azithromycin 500mg (Azee)</div><div class="muted text-sm">Cipla · Barcode: 8901298765432</div></div>
+            <span class="badge green">✅ Genuine</span>
+          </div>
+        </div>
+        <div>
+          <div class="med-db-card" onclick="fillBarcode('8900112233445')">
+            <div class="drug-icon" style="background:var(--warning-light)">⚠️</div>
+            <div style="flex:1"><div class="fw-6">Paracetamol (Expired Stock)</div><div class="muted text-sm">Unknown batch · Expired Jan 2024</div></div>
+            <span class="badge yellow">⚠️ Expired</span>
+          </div>
+          <div class="med-db-card" onclick="fillBarcode('FAKE123456789')">
+            <div class="drug-icon" style="background:var(--danger-light)">🚨</div>
+            <div style="flex:1"><div class="fw-6">Counterfeit Sample Drug</div><div class="muted text-sm">Not in CDSCO database</div></div>
+            <span class="badge red">🚨 Fake</span>
+          </div>
+          <div class="med-db-card" onclick="fillBarcode('9999999999999')">
+            <div class="drug-icon" style="background:var(--gray-100)">❓</div>
+            <div style="flex:1"><div class="fw-6">Unknown / Unregistered</div><div class="muted text-sm">Barcode not in database</div></div>
+            <span class="badge yellow">❓ Unknown</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan History -->
+    <div class="card mt-4">
+      <div class="card-title">📋 Verification History</div>
+      <div id="scan-history"><p class="muted text-sm" style="padding:8px 0">No medicines verified yet. Scan a barcode to start.</p></div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('fake-medicine');
+
+// Mock medicine database (simulating CDSCO + pharma registrations)
+const MEDICINE_DB = {
+  '8901234567890': {
+    status: 'genuine',
+    name: 'Crocin Advance 500mg',
+    manufacturer: 'GSK (GlaxoSmithKline India)',
+    batch: 'BX-24-09182',
+    mfgDate: 'September 2024',
+    expDate: 'August 2026',
+    license: 'MFG/KA/40/2019',
+    ingredients: 'Paracetamol 500mg',
+    mrp: '₹30 (10 tablets)',
+    storage: 'Store below 25°C, away from moisture',
+    cdscoVerified: true,
+    warnings: []
+  },
+  '8907654321098': {
+    status: 'genuine',
+    name: 'Glycomet 500mg (Metformin)',
+    manufacturer: 'USV Pvt. Ltd.',
+    batch: 'USV-24-11067',
+    mfgDate: 'November 2024',
+    expDate: 'October 2026',
+    license: 'MFG/MH/55/2018',
+    ingredients: 'Metformin Hydrochloride 500mg',
+    mrp: '₹42 (10 tablets)',
+    storage: 'Store below 30°C',
+    cdscoVerified: true,
+    warnings: ['Take with meals to avoid nausea']
+  },
+  '8901298765432': {
+    status: 'genuine',
+    name: 'Azee 500mg (Azithromycin)',
+    manufacturer: 'Cipla Ltd.',
+    batch: 'CP-24-07341',
+    mfgDate: 'July 2024',
+    expDate: 'June 2026',
+    license: 'MFG/MH/22/2020',
+    ingredients: 'Azithromycin 500mg',
+    mrp: '₹85 (3 tablets)',
+    storage: 'Store below 30°C',
+    cdscoVerified: true,
+    warnings: ['Complete full course', 'Do not crush or chew']
+  },
+  '8900112233445': {
+    status: 'expired',
+    name: 'Paracetamol 500mg',
+    manufacturer: 'Hindpharma Ltd.',
+    batch: 'HP-23-04120',
+    mfgDate: 'April 2023',
+    expDate: 'January 2024',
+    license: 'MFG/UP/11/2015',
+    ingredients: 'Paracetamol 500mg',
+    mrp: '₹25 (10 tablets)',
+    storage: 'Store below 25°C',
+    cdscoVerified: true,
+    warnings: ['⚠️ EXPIRED — Do NOT consume']
+  },
+  'FAKE123456789': {
+    status: 'fake',
+    name: '"Paracetamol 650mg" (Counterfeit)',
+    manufacturer: 'NOT IN DATABASE',
+    batch: 'UNKNOWN',
+    mfgDate: 'Unknown',
+    expDate: 'Unknown',
+    license: 'NOT REGISTERED',
+    ingredients: 'Unknown — Possibly harmful',
+    mrp: 'Unknown',
+    storage: 'N/A',
+    cdscoVerified: false,
+    warnings: ['🚨 COUNTERFEIT DETECTED', '⛔ Do NOT consume', '📮 Report to CDSCO immediately']
+  }
+};
+
+let cameraActive = false, stream = null;
+
+function fillBarcode(code) {
+  const input = document.getElementById('barcode-input');
+  input.value = code;
+  updateBarcodeVisual(code);
+  verifyManual();
+}
+
+function updateBarcodeVisual(code) {
+  const visual = code.split('').map((c, i) => i % 2 === 0 ? '|' : '│').join(' ');
+  document.getElementById('barcode-visual').textContent = code + '\n' + '| ' + visual + ' |';
+}
+
+document.getElementById('barcode-input').addEventListener('input', function() {
+  updateBarcodeVisual(this.value);
+});
+
+function verifyManual() {
+  const code = document.getElementById('barcode-input').value.trim();
+  if (!code) return alert('Please enter a barcode number.');
+  verifyCode(code);
+}
+
+function verifyCode(code) {
+  const drug = MEDICINE_DB[code];
+  if (!drug) {
+    showResult({ status: 'unknown', name: 'Unregistered Drug', code });
+  } else {
+    showResult({ ...drug, code });
+  }
+  saveData('medicine_scans', { code, status: drug ? drug.status : 'unknown', name: drug ? drug.name : 'Unknown' });
+  loadHistory();
+}
+
+function showResult(drug) {
+  const configs = {
+    genuine: { cls: 'result-genuine', icon: '✅', title: 'GENUINE MEDICINE VERIFIED', color: '#166534', steps: [
+      { ok: true, msg: 'Barcode found in CDSCO database' },
+      { ok: true, msg: 'Manufacturer license verified' },
+      { ok: true, msg: 'Batch number authenticated' },
+      { ok: drug.expDate && new Date(drug.expDate) > new Date(), msg: 'Expiry date valid' },
+      { ok: true, msg: 'Hologram & packaging checks passed' }
+    ]},
+    fake: { cls: 'result-fake', icon: '🚨', title: 'FAKE MEDICINE DETECTED!', color: '#991b1b', steps: [
+      { ok: false, msg: 'Barcode NOT found in CDSCO database' },
+      { ok: false, msg: 'Manufacturer NOT registered' },
+      { ok: false, msg: 'Batch number INVALID' },
+      { ok: false, msg: 'Possible harmful ingredients' },
+      { ok: false, msg: 'Do NOT consume this medicine' }
+    ]},
+    expired: { cls: 'result-unverified', icon: '⚠️', title: 'MEDICINE EXPIRED!', color: '#92400e', steps: [
+      { ok: true, msg: 'Barcode found in database' },
+      { ok: true, msg: 'Manufacturer verified' },
+      { ok: false, msg: `EXPIRED: ${drug.expDate}` },
+      { ok: false, msg: 'Expired drugs may be ineffective or harmful' },
+      { ok: true, msg: 'Return to pharmacy for proper disposal' }
+    ]},
+    unknown: { cls: 'result-unverified', icon: '❓', title: 'MEDICINE NOT IN DATABASE', color: '#92400e', steps: [
+      { ok: false, msg: 'Barcode not found in database' },
+      { ok: null, msg: 'Could be regional/local brand not yet listed' },
+      { ok: false, msg: 'Cannot confirm authenticity' },
+      { ok: null, msg: 'Contact manufacturer for verification' },
+      { ok: null, msg: 'Buy from certified pharmacy only' }
+    ]}
+  };
+
+  const cfg = configs[drug.status] || configs.unknown;
+  const isFake = drug.status === 'fake';
+  document.getElementById('report-section').style.display = isFake ? 'block' : 'none';
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card ${cfg.cls}">
+      <span class="result-icon">${cfg.icon}</span>
+      <div class="result-title" style="color:${cfg.color}">${cfg.title}</div>
+
+      ${drug.status !== 'unknown' ? `
+      <table class="detail-table">
+        <tr><td>Medicine Name</td><td><strong>${drug.name || '–'}</strong></td></tr>
+        <tr><td>Barcode</td><td><span class="barcode-display">${drug.code}</span></td></tr>
+        <tr><td>Manufacturer</td><td>${drug.manufacturer}</td></tr>
+        <tr><td>Batch Number</td><td>${drug.batch}</td></tr>
+        <tr><td>Manufactured</td><td>${drug.mfgDate}</td></tr>
+        <tr><td>Expiry Date</td><td style="color:${drug.status === 'expired' ? '#991b1b' : 'inherit'};font-weight:${drug.status === 'expired' ? '700' : 'normal'}">${drug.expDate}</td></tr>
+        <tr><td>License No.</td><td>${drug.license}</td></tr>
+        <tr><td>Ingredients</td><td>${drug.ingredients}</td></tr>
+        <tr><td>MRP</td><td>${drug.mrp}</td></tr>
+        <tr><td>CDSCO Verified</td><td>${drug.cdscoVerified ? '<span style="color:#166534;font-weight:700">✅ Yes</span>' : '<span style="color:#991b1b;font-weight:700">❌ No</span>'}</td></tr>
+        <tr><td>Storage</td><td>${drug.storage}</td></tr>
+      </table>` : `<p style="text-align:center;color:${cfg.color};font-size:14px;padding:12px">Barcode <strong>${drug.code}</strong> was not found in the CDSCO medicine registry. This could mean it is a counterfeit, regional brand, or not yet listed.</p>`}
+
+      ${drug.warnings?.length ? `<div style="margin-top:12px">${drug.warnings.map(w => `<div class="alert ${isFake ? 'alert-red' : 'alert-yellow'}" style="margin-bottom:6px">${w}</div>`).join('')}</div>` : ''}
+
+      <div class="verify-steps">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.6;margin-bottom:4px">Verification Checklist</p>
+        ${cfg.steps.map(s => `<div class="verify-step ${s.ok === true ? 'ok' : s.ok === false ? 'fail' : 'warn'}">${s.ok === true ? '✅' : s.ok === false ? '❌' : '⚠️'} ${s.msg}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function reportToAuthority(authority) {
+  const code = document.getElementById('barcode-input').value;
+  alert(`📮 Report Submitted to ${authority}!\n\nBarcode: ${code}\nTime: ${new Date().toLocaleString('en-IN')}\n\nThank you for reporting. This helps protect others.\n\nCDSCO Helpline: 1800-11-4949\nEmail: cdsco-nic@nic.in`);
+}
+
+function toggleCamera() {
+  if (cameraActive) { stopCamera(); return; }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert('📷 Camera not supported in this browser.\n\nPlease use the manual barcode entry below, or try Chrome on mobile.'); return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(s => {
+      stream = s; cameraActive = true;
+      const video = document.getElementById('camera-feed');
+      video.srcObject = s; video.play();
+      video.style.display = 'block';
+      document.getElementById('scan-icon').style.display = 'none';
+      document.getElementById('scan-line').style.display = 'block';
+      document.getElementById('cam-status').textContent = 'Camera active — Point at medicine barcode';
+      document.getElementById('cam-btn').textContent = '⏹️ Stop Camera';
+      document.getElementById('cam-btn').style.background = 'var(--danger)';
+      // Simulate auto-detect after 3 seconds for demo
+      setTimeout(() => { if (cameraActive) autoDetectDemo(); }, 3000);
+    })
+    .catch(() => {
+      alert('📷 Camera permission denied.\n\nPlease allow camera access and try again, or use manual barcode entry below.');
+    });
+}
+
+function stopCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  cameraActive = false;
+  document.getElementById('camera-feed').style.display = 'none';
+  document.getElementById('scan-icon').style.display = 'block';
+  document.getElementById('scan-line').style.display = 'none';
+  document.getElementById('cam-status').textContent = 'Camera stopped';
+  document.getElementById('cam-btn').textContent = '📷 Start Camera Scan';
+  document.getElementById('cam-btn').style.background = 'var(--primary)';
+}
+
+function autoDetectDemo() {
+  if (!cameraActive) return;
+  const sampleCodes = ['8901234567890', '8907654321098', '8901298765432'];
+  const code = sampleCodes[Math.floor(Math.random() * sampleCodes.length)];
+  document.getElementById('barcode-input').value = code;
+  updateBarcodeVisual(code);
+  stopCamera();
+  verifyCode(code);
+  document.getElementById('cam-status').textContent = `✅ Barcode detected: ${code}`;
+}
+
+function loadHistory() {
+  const data = loadData('medicine_scans');
+  const el = document.getElementById('scan-history');
+  if (!data.length) { el.innerHTML = '<p class="muted text-sm" style="padding:8px 0">No medicines verified yet.</p>'; return; }
+  renderLog('scan-history', data, d => `
+    <div class="list-item">
+      <span style="font-size:22px">${d.status === 'genuine' ? '✅' : d.status === 'fake' ? '🚨' : d.status === 'expired' ? '⚠️' : '❓'}</span>
+      <div style="flex:1">
+        <div class="fw-6">${d.name || 'Unknown'}</div>
+        <div class="muted text-sm"><span class="barcode-display" style="font-size:11px;padding:2px 8px">${d.code}</span> · ${d.time}</div>
+      </div>
+      <span class="badge ${d.status === 'genuine' ? 'green' : d.status === 'fake' ? 'red' : 'yellow'}">${d.status.toUpperCase()}</span>
+    </div>`);
+}
+
+loadHistory();
+</script>
+</body>
+</html>

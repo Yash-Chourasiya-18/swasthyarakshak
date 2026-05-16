@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASHA Worker Mode | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.asha-hero{background:linear-gradient(135deg,#065f46,#047857);color:white;border-radius:16px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden}
+.asha-hero::after{content:'👩‍⚕️';position:absolute;right:20px;bottom:-10px;font-size:80px;opacity:.15}
+.patient-row{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:16px;margin-bottom:10px;transition:.2s;cursor:pointer}
+.patient-row:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.patient-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.visit-status{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.quick-log-btn{padding:16px;border-radius:12px;border:none;cursor:pointer;font-size:14px;font-weight:700;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.quick-log-btn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.task-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--gray-100);align-items:flex-start}
+.task-item:last-child{border:none}
+.task-check{width:22px;height:22px;border:2px solid var(--gray-300);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.2s;margin-top:2px}
+.task-check.done{background:var(--success);border-color:var(--success);color:white}
+.scheme-card{background:var(--primary-light);border:1px solid var(--primary);border-radius:10px;padding:14px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">👩‍⚕️ ASHA Worker Mode</h1><p class="page-sub">Village healthcare workers ke liye dedicated dashboard</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <div class="asha-hero">
+      <div style="font-size:13px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Accredited Social Health Activist</div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:4px" id="asha-name">Sunita Devi</div>
+      <div style="opacity:.85;font-size:14px">📍 Gram Panchayat: Rampur, Dist. Bareilly, UP</div>
+      <div style="display:flex;gap:20px;margin-top:16px;flex-wrap:wrap">
+        <div><div style="font-size:24px;font-weight:800" id="assigned-count">24</div><div style="opacity:.7;font-size:12px">Assigned Patients</div></div>
+        <div><div style="font-size:24px;font-weight:800" id="visits-today">6</div><div style="opacity:.7;font-size:12px">Visits Today</div></div>
+        <div><div style="font-size:24px;font-weight:800" id="pending-tasks">3</div><div style="opacity:.7;font-size:12px">Pending Tasks</div></div>
+        <div><div style="font-size:24px;font-weight:800">₹1,450</div><div style="opacity:.7;font-size:12px">Monthly Incentive</div></div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">🤰</div><div class="stat-val">5</div><div class="stat-lbl">Pregnant Women</div></div>
+      <div class="stat-card blue"><div class="stat-icon">👶</div><div class="stat-val">8</div><div class="stat-lbl">Newborns (0–1 yr)</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">💉</div><div class="stat-val">3</div><div class="stat-lbl">Vaccination Due</div></div>
+      <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-val">2</div><div class="stat-lbl">High Risk Patients</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <!-- Patient List -->
+        <div class="card mb-4">
+          <div class="card-title">👥 My Patients Today</div>
+          <input type="text" class="input mb-3" placeholder="🔍 Search patient name or village..." oninput="filterPatients(this.value)">
+          <div id="patient-list">
+            <div class="patient-row" onclick="openPatient('Kamla Devi')">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="patient-avatar">🤰</div>
+                <div style="flex:1">
+                  <div class="flex-between"><span class="fw-6">Kamla Devi, 24 yrs</span><span class="visit-status" style="background:var(--warning-light);color:#92400e">⏰ Pending</span></div>
+                  <div class="muted text-sm">🤰 28 weeks pregnant · Rampur Village</div>
+                  <div class="muted text-sm">Last visit: 3 days ago · ANC checkup due</div>
+                </div>
+              </div>
+            </div>
+            <div class="patient-row" onclick="openPatient('Raju (infant)')">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="patient-avatar">👶</div>
+                <div style="flex:1">
+                  <div class="flex-between"><span class="fw-6">Raju (4 months)</span><span class="visit-status" style="background:var(--danger-light);color:#991b1b">🔴 Urgent</span></div>
+                  <div class="muted text-sm">👶 Vaccine due: OPV + Penta · Malhotra Family</div>
+                  <div class="muted text-sm">Weight: 5.2 kg · Borderline malnutrition</div>
+                </div>
+              </div>
+            </div>
+            <div class="patient-row" onclick="openPatient('Shyam Lal')">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="patient-avatar">🧓</div>
+                <div style="flex:1">
+                  <div class="flex-between"><span class="fw-6">Shyam Lal, 68 yrs</span><span class="visit-status" style="background:var(--danger-light);color:#991b1b">⚠️ High Risk</span></div>
+                  <div class="muted text-sm">❤️ Hypertension · BP 162/98 (yesterday)</div>
+                  <div class="muted text-sm">Medication not taken · Rampur Khurd</div>
+                </div>
+              </div>
+            </div>
+            <div class="patient-row" onclick="openPatient('Meena Rani')">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="patient-avatar">👩</div>
+                <div style="flex:1">
+                  <div class="flex-between"><span class="fw-6">Meena Rani, 35 yrs</span><span class="visit-status" style="background:var(--success-light);color:#166534">✅ Visited</span></div>
+                  <div class="muted text-sm">🩸 Diabetes monitoring · Insulin given</div>
+                  <div class="muted text-sm">Visited at 8:30 AM · All vitals normal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline w-full mt-3" onclick="addPatient()">+ Add New Patient</button>
+        </div>
+
+        <!-- Quick Log -->
+        <div class="card">
+          <div class="card-title">⚡ Quick Field Log</div>
+          <p class="muted text-sm mb-3">Tezi se patient data log karo bina menu navigate kiye</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <button class="quick-log-btn" style="background:var(--danger-light);color:#991b1b" onclick="quickLog('BP')"><span style="font-size:28px">❤️</span><span>Log BP</span></button>
+            <button class="quick-log-btn" style="background:var(--primary-light);color:var(--primary-dark)" onclick="quickLog('Vaccine')"><span style="font-size:28px">💉</span><span>Vaccine</span></button>
+            <button class="quick-log-btn" style="background:var(--success-light);color:#166534" onclick="quickLog('Weight')"><span style="font-size:28px">⚖️</span><span>Weight</span></button>
+            <button class="quick-log-btn" style="background:var(--warning-light);color:#92400e" onclick="quickLog('ANC')"><span style="font-size:28px">🤰</span><span>ANC Check</span></button>
+            <button class="quick-log-btn" style="background:var(--purple-light);color:#6b21a8" onclick="quickLog('Sugar')"><span style="font-size:28px">🩸</span><span>Blood Sugar</span></button>
+            <button class="quick-log-btn" style="background:var(--gray-100);color:var(--gray-700)" onclick="quickLog('Note')"><span style="font-size:28px">📝</span><span>Note</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Today's Tasks -->
+        <div class="card mb-4">
+          <div class="card-title">✅ Today's Tasks</div>
+          <div id="task-list">
+            <div class="task-item"><div class="task-check done" onclick="toggleTask(this)">✓</div><div><div class="fw-6">Morning rounds — 4 families</div><div class="muted text-sm">Completed 8:00 AM</div></div></div>
+            <div class="task-item"><div class="task-check done" onclick="toggleTask(this)">✓</div><div><div class="fw-6">Meena Rani — Insulin injection + BP check</div><div class="muted text-sm">Completed 8:30 AM</div></div></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><div><div class="fw-6">🔴 Raju — OPV + Penta vaccination (urgent)</div><div class="muted text-sm">Malhotra family, Rampur · Due today</div></div></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><div><div class="fw-6">Kamla Devi — ANC checkup + Iron tablet</div><div class="muted text-sm">28 weeks pregnant · Weight, BP, fundal height</div></div></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><div><div class="fw-6">Shyam Lal — BP medicine reminder</div><div class="muted text-sm">Not taking Amlodipine regularly</div></div></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><div><div class="fw-6">Monthly report submit to PHC</div><div class="muted text-sm">Due by 5 PM today</div></div></div>
+          </div>
+          <button class="btn btn-outline w-full mt-3" onclick="addTask()">+ Add Task</button>
+        </div>
+
+        <!-- Government Schemes -->
+        <div class="card mb-4">
+          <div class="card-title">🏛️ Government Schemes Tracker</div>
+          <div class="scheme-card">
+            <div class="fw-6">🤰 PM Matru Vandana Yojana</div>
+            <div class="muted text-sm">₹5,000 for first child — 3 pregnant women eligible</div>
+            <div style="margin-top:8px;display:flex;gap:8px"><span class="badge yellow">2 Pending</span><button class="btn btn-sm btn-primary" onclick="applyScheme('PMMVY')">Apply Now</button></div>
+          </div>
+          <div class="scheme-card">
+            <div class="fw-6">👶 Janani Suraksha Yojana</div>
+            <div class="muted text-sm">₹1,400 cash for institutional delivery — Rural areas</div>
+            <div style="margin-top:8px;display:flex;gap:8px"><span class="badge green">1 Registered</span><button class="btn btn-sm btn-outline" onclick="applyScheme('JSY')">New Case</button></div>
+          </div>
+          <div class="scheme-card">
+            <div class="fw-6">💊 PM Jan Aushadhi Kendra</div>
+            <div class="muted text-sm">Generic medicines at 50–90% discount — Tell patients</div>
+            <div style="margin-top:8px"><button class="btn btn-sm btn-outline" onclick="findJanAushadhi()">📍 Find Nearest Store</button></div>
+          </div>
+        </div>
+
+        <!-- Monthly Incentive Tracker -->
+        <div class="card">
+          <div class="card-title">💰 ASHA Incentive Tracker — May 2026</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--gray-100)"><span class="text-sm">Institutional deliveries (2 × ₹600)</span><span class="fw-6 text-sm">₹1,200</span></div>
+            <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--gray-100)"><span class="text-sm">Immunization (8 children × ₹100)</span><span class="fw-6 text-sm">₹800</span></div>
+            <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--gray-100)"><span class="text-sm">ANC visits (5 women × ₹50)</span><span class="fw-6 text-sm">₹250</span></div>
+            <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--gray-100)"><span class="text-sm">TB DOTS patient support</span><span class="fw-6 text-sm">₹500</span></div>
+            <div class="flex-between" style="padding:10px 0;font-size:16px;font-weight:800;color:var(--success)"><span>Total Earned</span><span>₹2,750</span></div>
+          </div>
+          <button class="btn btn-primary w-full" onclick="submitReport()">📤 Submit Monthly Report to PHC</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('asha-worker');
+
+function filterPatients(q) {
+  const rows = document.querySelectorAll('.patient-row');
+  rows.forEach(r => r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none');
+}
+
+function openPatient(name) {
+  const actions = ['Log BP reading', 'Give vaccine', 'Check weight', 'Distribute iron tablets', 'ANC examination', 'Refer to PHC'];
+  const action = prompt(`Patient: ${name}\n\nSelect action:\n1. Log BP\n2. Give vaccine\n3. Check weight\n4. Iron tablets\n5. ANC exam\n6. Refer to PHC\n\nEnter number (1-6):`);
+  if (action) {
+    const chosen = actions[parseInt(action) - 1] || 'Visit logged';
+    saveData('asha_visits', { patient: name, action: chosen });
+    alert(`✅ Logged: ${chosen} for ${name}`);
+    const count = parseInt(document.getElementById('visits-today').textContent) + 1;
+    document.getElementById('visits-today').textContent = count;
+  }
+}
+
+function quickLog(type) {
+  const val = prompt(`Quick log: ${type}\n\nEnter patient name + value (e.g. "Kamla Devi, 110/72"):`);
+  if (val) { saveData('asha_quicklogs', { type, val }); alert(`✅ ${type} logged: ${val}`); }
+}
+
+function addPatient() {
+  const name = prompt('New patient name:');
+  if (name) { alert(`✅ ${name} added to your patient list.\nSchedule first visit in the next 24 hours.`); }
+}
+
+function addTask() {
+  const task = prompt('New task description:');
+  if (!task) return;
+  const list = document.getElementById('task-list');
+  const div = document.createElement('div');
+  div.className = 'task-item';
+  div.innerHTML = `<div class="task-check" onclick="toggleTask(this)"></div><div><div class="fw-6">${task}</div><div class="muted text-sm">Added now</div></div>`;
+  list.appendChild(div);
+}
+
+function toggleTask(el) {
+  el.classList.toggle('done');
+  el.textContent = el.classList.contains('done') ? '✓' : '';
+  const pending = document.querySelectorAll('.task-check:not(.done)').length;
+  document.getElementById('pending-tasks').textContent = pending;
+}
+
+function applyScheme(name) { alert(`📋 Opening ${name} application form...\n\nIn production: Form submission to NHM portal.`); }
+function findJanAushadhi() { alert('📍 Nearest Jan Aushadhi Kendra:\n\nRampur PHC compound, 0.5 km\nOpen: 9 AM – 5 PM, Mon–Sat'); }
+function submitReport() {
+  const visits = loadData('asha_visits').length;
+  alert(`📤 Monthly Report Submitted!\n\nTotal patient visits: ${visits + 6}\nSchemes processed: 3\nVaccinations given: 8\n\n✅ Report sent to PHC Bareilly.\nYour incentive will be credited within 7 days.`);
+}
+</script>
+</body>
+</html>

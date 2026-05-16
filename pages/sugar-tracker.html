@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sugar Tracker | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🩸 Sugar / Diabetes Tracker</h1><p class="page-sub">Daily glucose history & charts</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card red"><div class="stat-icon">🩸</div><div class="stat-val" id="last-sugar">–</div><div class="stat-lbl">Last Reading (mg/dL)</div><span class="badge green" id="sugar-status">No data</span></div>
+      <div class="stat-card blue"><div class="stat-icon">📊</div><div class="stat-val" id="sugar-avg">–</div><div class="stat-lbl">7-day Average</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">🧪</div><div class="stat-val" id="hba1c-est">–%</div><div class="stat-lbl">HbA1c Estimate</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Blood Sugar</div>
+        <div class="form-group"><label>Glucose Level (mg/dL)</label><input type="number" id="sugar-val" placeholder="e.g. 105" class="input"></div>
+        <div class="form-group"><label>Reading Type</label>
+          <select id="sugar-type" class="input">
+            <option value="fasting">Fasting (before meals)</option>
+            <option value="postmeal">Post-Meal (2 hrs after)</option>
+            <option value="random">Random</option>
+            <option value="bedtime">Bedtime</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="sugar-datetime" class="input"></div>
+        <div class="form-group"><label>Notes</label><input type="text" id="sugar-notes" placeholder="Before breakfast, feeling thirsty..." class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logSugar()">💾 Save Reading</button>
+        <div id="sugar-alert" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Weekly Chart</div>
+        <div class="bar-chart" id="sugar-chart"></div>
+        <div class="divider"></div>
+        <div id="sugar-log"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Blood Sugar Reference Ranges</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:var(--gray-50)">
+            <th style="padding:10px;text-align:left;border-bottom:1px solid var(--gray-200)">Reading Type</th>
+            <th style="padding:10px;text-align:left;border-bottom:1px solid var(--gray-200)">Normal</th>
+            <th style="padding:10px;text-align:left;border-bottom:1px solid var(--gray-200)">Pre-Diabetes</th>
+            <th style="padding:10px;text-align:left;border-bottom:1px solid var(--gray-200)">Diabetes</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:10px;border-bottom:1px solid var(--gray-100)">Fasting</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#166534">70–99</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#92400e">100–125</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#991b1b">126+</td></tr>
+            <tr><td style="padding:10px;border-bottom:1px solid var(--gray-100)">Post-Meal (2h)</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#166534">&lt; 140</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#92400e">140–199</td><td style="padding:10px;border-bottom:1px solid var(--gray-100);color:#991b1b">200+</td></tr>
+            <tr><td style="padding:10px">Random</td><td style="padding:10px;color:#166534">&lt; 140</td><td style="padding:10px;color:#92400e">140–199</td><td style="padding:10px;color:#991b1b">200+</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('sugar');
+document.getElementById('sugar-datetime').value = new Date().toISOString().slice(0,16);
+
+function getSugarStatus(val, type) {
+  const limits = { fasting: [100, 126], postmeal: [140, 200], random: [140, 200], bedtime: [120, 180] };
+  const [pre, dia] = limits[type] || [140, 200];
+  if (val < pre) return { label: '✅ Normal', cls: 'green', alert: false };
+  if (val < dia) return { label: '⚠️ Pre-Diabetic Range', cls: 'yellow', alert: true };
+  return { label: '🚨 Diabetic Range', cls: 'red', alert: true };
+}
+
+function calcHbA1c(avgGlucose) { return ((avgGlucose + 46.7) / 28.7).toFixed(1); }
+
+function logSugar() {
+  const val = parseInt(document.getElementById('sugar-val').value);
+  const type = document.getElementById('sugar-type').value;
+  const notes = document.getElementById('sugar-notes').value;
+  if (!val) return alert('Please enter a glucose value.');
+  const status = getSugarStatus(val, type);
+  saveData('sugar_readings', { val, type, notes, status: status.label });
+  const alertBox = document.getElementById('sugar-alert');
+  alertBox.className = `alert ${status.alert ? (status.label.includes('Diabetic Range') ? 'alert-red' : 'alert-yellow') : 'alert-green'}`;
+  alertBox.textContent = status.alert
+    ? `⚠️ ${val} mg/dL — ${status.label}. Please consult your doctor.`
+    : `✅ ${val} mg/dL saved. Reading is in normal range.`;
+  document.getElementById('sugar-val').value = '';
+  document.getElementById('sugar-notes').value = '';
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('sugar_readings');
+  if (data.length) {
+    const last = data[0];
+    document.getElementById('last-sugar').textContent = `${last.val}`;
+    const s = document.getElementById('sugar-status');
+    s.textContent = last.status;
+    s.className = `badge ${last.status.includes('Normal') ? 'green' : last.status.includes('Diabetic Range') && !last.status.includes('Pre') ? 'red' : 'yellow'}`;
+    const vals = data.map(d => d.val);
+    const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    document.getElementById('sugar-avg').textContent = avg;
+    document.getElementById('hba1c-est').textContent = `${calcHbA1c(avg)}%`;
+  }
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('sugar-chart', recent.map(d => d.val), recent.map(d => d.type === 'fasting' ? 'Fast' : d.type === 'postmeal' ? 'Post' : 'Rnd'), '#ef4444');
+  renderLog('sugar-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:24px">🩸</span>
+      <div style="flex:1"><div class="fw-6">${d.val} mg/dL <small class="muted">· ${d.type}</small></div><div class="muted">${d.notes || 'No notes'}</div></div>
+      <span class="badge ${d.status.includes('Normal') ? 'green' : d.status.includes('Pre') ? 'yellow' : 'red'}">${d.status.includes('Normal') ? 'Normal' : d.status.includes('Pre') ? 'Pre-DM' : 'High'}</span>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

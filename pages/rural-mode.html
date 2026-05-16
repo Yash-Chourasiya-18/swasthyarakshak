@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rural Mode | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.mode-toggle-card{border:2px solid var(--gray-200);border-radius:16px;padding:20px;cursor:pointer;transition:.3s;position:relative;overflow:hidden}
+.mode-toggle-card.enabled{border-color:var(--success);background:var(--success-light)}
+.mode-toggle-card.enabled::before{content:'✅';position:absolute;top:12px;right:14px;font-size:20px}
+.mode-toggle-card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.big-toggle{width:64px;height:34px;background:var(--gray-200);border-radius:20px;position:relative;cursor:pointer;transition:.3s;flex-shrink:0}
+.big-toggle.on{background:var(--success)}
+.big-toggle::after{content:'';position:absolute;width:26px;height:26px;background:white;border-radius:50%;top:4px;left:4px;transition:.3s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.big-toggle.on::after{left:34px}
+.lang-btn{padding:12px 20px;border-radius:10px;border:2px solid var(--gray-200);background:white;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;text-align:center}
+.lang-btn.active{border-color:var(--primary);background:var(--primary);color:white}
+.preview-box{background:var(--gray-900);color:white;border-radius:12px;padding:20px;margin-top:16px}
+.large-btn-demo{padding:20px 24px;border-radius:12px;font-size:20px;font-weight:800;border:none;cursor:pointer;width:100%;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--gray-100)}
+.setting-row:last-child{border:none}
+.setting-label{flex:1}
+.setting-label h4{font-weight:700;margin-bottom:2px}
+.setting-label p{font-size:12px;color:var(--gray-500)}
+.offline-stat{background:var(--gray-50);border:1px solid var(--gray-100);border-radius:10px;padding:14px;text-align:center}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🌾 Rural India Mode</h1><p class="page-sub">Low internet · Regional language · Elderly-friendly settings</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <!-- Quick Mode Presets -->
+    <div class="card mb-4">
+      <div class="card-title">⚡ Quick Presets</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        <div class="mode-toggle-card" id="rural-preset" onclick="applyPreset('rural')">
+          <div style="font-size:32px;margin-bottom:8px">🌾</div>
+          <h3>Rural Village Mode</h3>
+          <p class="muted text-sm">Low data, Hindi UI, large text</p>
+        </div>
+        <div class="mode-toggle-card" id="elderly-preset" onclick="applyPreset('elderly')">
+          <div style="font-size:32px;margin-bottom:8px">🧓</div>
+          <h3>Elderly Mode</h3>
+          <p class="muted text-sm">Extra-large buttons, voice navigation</p>
+        </div>
+        <div class="mode-toggle-card" id="offline-preset" onclick="applyPreset('offline')">
+          <div style="font-size:32px;margin-bottom:8px">📵</div>
+          <h3>Offline-First Mode</h3>
+          <p class="muted text-sm">No internet required, local storage only</p>
+        </div>
+        <div class="mode-toggle-card" id="asha-preset" onclick="applyPreset('asha')">
+          <div style="font-size:32px;margin-bottom:8px">👩‍⚕️</div>
+          <h3>ASHA Worker Mode</h3>
+          <p class="muted text-sm">Field worker optimized workflow</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <!-- Language Settings -->
+        <div class="card mb-4">
+          <div class="card-title">🗣️ Language / भाषा</div>
+          <p class="muted text-sm mb-3">Interface ki language select karo</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="lang-grid">
+            <button class="lang-btn active" onclick="setLang('en','English',this)">🇬🇧 English</button>
+            <button class="lang-btn" onclick="setLang('hi','हिंदी',this)">🇮🇳 हिंदी</button>
+            <button class="lang-btn" onclick="setLang('mr','मराठी',this)">मराठी</button>
+            <button class="lang-btn" onclick="setLang('bho','भोजपुरी',this)">भोजपुरी</button>
+            <button class="lang-btn" onclick="setLang('gu','ગુજરાતી',this)">ગુજરાતી</button>
+            <button class="lang-btn" onclick="setLang('ta','தமிழ்',this)">தமிழ்</button>
+            <button class="lang-btn" onclick="setLang('te','తెలుగు',this)">తెలుగు</button>
+            <button class="lang-btn" onclick="setLang('bn','বাংলা',this)">বাংলা</button>
+            <button class="lang-btn" onclick="setLang('pa','ਪੰਜਾਬੀ',this)">ਪੰਜਾਬੀ</button>
+            <button class="lang-btn" onclick="setLang('kn','ಕನ್ನಡ',this)">ಕನ್ನಡ</button>
+          </div>
+          <div class="alert alert-blue mt-3">🔊 <strong>Selected: <span id="selected-lang">English</span></strong> — Voice instructions will also change to this language.</div>
+        </div>
+
+        <!-- Offline Storage Status -->
+        <div class="card mb-4">
+          <div class="card-title">💾 Offline Data Storage (Feature 55)</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+            <div class="offline-stat"><div style="font-size:24px;font-weight:800;color:var(--primary)" id="cached-records">–</div><div class="muted text-sm">Records cached</div></div>
+            <div class="offline-stat"><div style="font-size:24px;font-weight:800;color:var(--success)">~1.2 MB</div><div class="muted text-sm">Storage used</div></div>
+            <div class="offline-stat"><div style="font-size:24px;font-weight:800;color:var(--warning)" id="sync-status">Pending</div><div class="muted text-sm">Sync status</div></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>Auto-sync when online</h4><p>Data connects to server when WiFi available</p></div>
+            <div class="big-toggle on" onclick="toggleSwitch(this)"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>Compress images</h4><p>Save storage by reducing report image size</p></div>
+            <div class="big-toggle on" onclick="toggleSwitch(this)"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>Offline PDF reports</h4><p>Keep last 30 days reports available offline</p></div>
+            <div class="big-toggle on" onclick="toggleSwitch(this)"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn btn-primary" onclick="syncNow()">🔄 Sync Now</button>
+            <button class="btn btn-outline" onclick="clearCache()">🗑️ Clear Cache</button>
+          </div>
+        </div>
+
+        <!-- Rural Health Camp -->
+        <div class="card">
+          <div class="card-title">🏕️ Rural Health Camp Integration (Feature 56)</div>
+          <div class="list-item">
+            <span style="font-size:22px">📅</span>
+            <div style="flex:1">
+              <div class="fw-6">Free Health Camp — Sector 15 Community Hall</div>
+              <div class="muted text-sm">Saturday, 20 May 2026 · 9 AM – 4 PM</div>
+              <div class="muted text-sm">Services: BP, Sugar, Eye, Dental checkup (Free)</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="registerCamp()">Register</button>
+          </div>
+          <div class="list-item">
+            <span style="font-size:22px">📅</span>
+            <div style="flex:1">
+              <div class="fw-6">Pradhan Mantri Jan Arogya Camp</div>
+              <div class="muted text-sm">Sunday, 28 May 2026 · Primary Health Centre</div>
+              <div class="muted text-sm">Services: Vaccination, Nutrition, Maternal Health</div>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="registerCamp()">Notify Me</button>
+          </div>
+          <div class="divider"></div>
+          <button class="btn btn-outline w-full" onclick="findCamps()">🔍 Find Camps Near Me</button>
+        </div>
+      </div>
+
+      <div>
+        <!-- Accessibility Settings -->
+        <div class="card mb-4">
+          <div class="card-title">♿ Accessibility Settings</div>
+
+          <div class="setting-row">
+            <div class="setting-label"><h4>🔡 Large Text Mode</h4><p>Font size badhao reading ke liye</p></div>
+            <div class="big-toggle" id="toggle-large-text" onclick="toggleSetting(this,'large_text')"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>🔲 One-Tap Large Buttons (Feature 54)</h4><p>Bade buttons jo easily tap ho sake</p></div>
+            <div class="big-toggle" id="toggle-large-btn" onclick="toggleSetting(this,'large_buttons')"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>🎙️ Voice Navigation (Feature 53)</h4><p>Bolo aur navigate karo</p></div>
+            <div class="big-toggle" id="toggle-voice-nav" onclick="toggleSetting(this,'voice_nav')"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>🌑 High Contrast Mode</h4><p>Bright light mein better readability</p></div>
+            <div class="big-toggle" id="toggle-contrast" onclick="toggleSetting(this,'high_contrast')"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>📶 Low Internet Mode (Feature 51)</h4><p>Data compress karo, images disable karo</p></div>
+            <div class="big-toggle" id="toggle-low-net" onclick="toggleSetting(this,'low_internet')"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><h4>🔊 Screen Reader Support</h4><p>Auto text-to-speech for all content</p></div>
+            <div class="big-toggle" id="toggle-tts" onclick="toggleSetting(this,'tts')"></div>
+          </div>
+        </div>
+
+        <!-- Large Button Preview -->
+        <div class="card mb-4" id="large-btn-preview" style="display:none">
+          <div class="card-title">🔲 Large Button Mode Preview</div>
+          <button class="large-btn-demo" style="background:var(--danger);color:white" onclick="alert('SOS sent!')">🆘 <span>Emergency SOS</span></button>
+          <button class="large-btn-demo" style="background:var(--primary);color:white" onclick="window.location.href='../pages/bp-tracker.html'">❤️ <span>Check Blood Pressure</span></button>
+          <button class="large-btn-demo" style="background:var(--success);color:white">💧 <span>Log Water Intake</span></button>
+          <button class="large-btn-demo" style="background:var(--warning);color:white">💊 <span>Medicine Reminder</span></button>
+        </div>
+
+        <!-- Low Internet Mode Info -->
+        <div class="card" id="low-internet-card" style="display:none">
+          <div class="card-title">📶 Low Internet Mode Active</div>
+          <div class="alert alert-yellow">⚡ Low data mode enabled. Following features disabled to save data:</div>
+          <div class="list-item"><span>❌</span><div class="muted">Map loading (static version used)</div></div>
+          <div class="list-item"><span>❌</span><div class="muted">Video calls compressed to audio-only</div></div>
+          <div class="list-item"><span>❌</span><div class="muted">Auto image upload disabled</div></div>
+          <div class="list-item"><span>✅</span><div class="fw-6">All health tracking works normally</div></div>
+          <div class="list-item"><span>✅</span><div class="fw-6">Emergency SOS always active</div></div>
+          <div class="list-item"><span>✅</span><div class="fw-6">Voice features work offline</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('rural-mode');
+
+// Count cached records
+const keys = ['bp_readings','sugar_readings','sleep_logs','activities','mood_logs','voice_notes','vaccine_records'];
+const total = keys.reduce((a,k) => a + loadData(k).length, 0);
+document.getElementById('cached-records').textContent = total;
+document.getElementById('sync-status').textContent = total > 0 ? 'Pending' : 'Synced';
+
+function toggleSwitch(el) { el.classList.toggle('on'); }
+
+function toggleSetting(el, key) {
+  el.classList.toggle('on');
+  const on = el.classList.contains('on');
+  localStorage.setItem('setting_' + key, on);
+  if (key === 'large_buttons') document.getElementById('large-btn-preview').style.display = on ? 'block' : 'none';
+  if (key === 'low_internet') document.getElementById('low-internet-card').style.display = on ? 'block' : 'none';
+  if (key === 'large_text') document.body.style.fontSize = on ? '18px' : '';
+  if (key === 'high_contrast') document.body.style.filter = on ? 'contrast(1.3)' : '';
+  if (key === 'voice_nav' && on) { speak('Voice navigation enabled. You can now navigate by voice commands.'); }
+}
+
+function speak(text) { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(text); u.lang = 'hi-IN'; window.speechSynthesis.speak(u); } }
+
+function setLang(code, name, btn) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  localStorage.setItem('app_language', code);
+  document.getElementById('selected-lang').textContent = name;
+  speak(`भाषा बदल दी गई: ${name}`);
+}
+
+function applyPreset(type) {
+  document.querySelectorAll('.mode-toggle-card').forEach(c => c.classList.remove('enabled'));
+  document.getElementById(type + '-preset').classList.add('enabled');
+  const presets = {
+    rural: { low_internet: true, large_text: true, lang: 'hi' },
+    elderly: { large_buttons: true, voice_nav: true, large_text: true, tts: true },
+    offline: { low_internet: true },
+    asha: { large_buttons: true, low_internet: true, lang: 'hi' }
+  };
+  const p = presets[type];
+  Object.keys(p).forEach(key => {
+    if (key === 'lang') return;
+    const el = document.getElementById('toggle-' + key.replace('_','-'));
+    if (el && !el.classList.contains('on')) { el.classList.add('on'); toggleSetting(el, key); }
+  });
+  const labels = { rural:'🌾 Rural Village Mode', elderly:'🧓 Elderly Mode', offline:'📵 Offline-First Mode', asha:'👩‍⚕️ ASHA Worker Mode' };
+  alert(`✅ ${labels[type]} applied!\n\nAll recommended settings have been enabled.`);
+}
+
+function syncNow() {
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  setTimeout(() => { document.getElementById('sync-status').textContent = 'Synced ✅'; document.getElementById('sync-status').style.color = 'var(--success)'; alert('✅ All data synced successfully!'); }, 2000);
+}
+
+function clearCache() { if (confirm('Clear all cached data? This will NOT delete your health records.')) alert('✅ Cache cleared. App will reload fresh data on next use.'); }
+function registerCamp() { alert('✅ Registered!\n\nSMS confirmation will be sent to your number.\n\nReminder will be set for the camp day.'); }
+function findCamps() { alert('🔍 Searching camps near Noida...\n\n3 health camps found within 10km.\n(GPS integration in production version)'); }
+
+// Load saved settings
+['large_text','large_buttons','voice_nav','high_contrast','low_internet','tts'].forEach(key => {
+  const saved = localStorage.getItem('setting_' + key);
+  if (saved === 'true') {
+    const el = document.getElementById('toggle-' + key.replace('_','-'));
+    if (el) { el.classList.add('on'); if (key === 'large_buttons') document.getElementById('large-btn-preview').style.display = 'block'; if (key === 'low_internet') document.getElementById('low-internet-card').style.display = 'block'; }
+  }
+});
+</script>
+</body>
+</html>

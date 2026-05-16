@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fall Detection | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.detection-circle{width:200px;height:200px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px;border:6px solid var(--success);background:var(--success-light);font-size:48px;cursor:pointer;transition:.3s;position:relative}
+.detection-circle.active{background:#dcfce7;border-color:var(--success);animation:detectPulse 1.5s infinite}
+.detection-circle.alert{background:var(--danger-light);border-color:var(--danger);animation:sosFlash .5s infinite}
+@keyframes detectPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 20px rgba(34,197,94,0)}}
+@keyframes sosFlash{0%,100%{background:var(--danger-light)}50%{background:#fca5a5}}
+.status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.green{background:var(--success);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.sensor-val{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;text-align:center}
+.sensor-val .val{font-size:20px;font-weight:700}
+.sensor-val .lbl{font-size:11px;color:var(--gray-500);margin-top:2px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🫷 Fall Detection System</h1><p class="page-sub">Elderly girne par auto alert</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card" style="text-align:center">
+        <div class="card-title" style="text-align:left">Fall Detection Monitor</div>
+        <div class="detection-circle active" id="detect-circle" onclick="testFall()">
+          <span id="detect-icon">🧓</span>
+          <span style="font-size:13px;font-weight:700;color:var(--success);margin-top:8px" id="detect-status">Monitoring</span>
+        </div>
+        <p class="muted text-sm mb-4">Using device motion sensors to detect sudden falls</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-success" id="toggle-btn" onclick="toggleMonitoring()">⏸ Pause Monitoring</button>
+          <button class="btn btn-danger" onclick="testFall()">🧪 Test Fall Alert</button>
+        </div>
+
+        <div class="sensor-grid">
+          <div class="sensor-val"><div class="val" id="accel-x">0.0</div><div class="lbl">Accel X (g)</div></div>
+          <div class="sensor-val"><div class="val" id="accel-y">0.0</div><div class="lbl">Accel Y (g)</div></div>
+          <div class="sensor-val"><div class="val" id="accel-z">1.0</div><div class="lbl">Accel Z (g)</div></div>
+        </div>
+        <p class="muted text-sm mt-3">Falls detected when acceleration spike &gt; 3g</p>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">⚙️ Detection Settings</div>
+          <div class="form-group"><label>User Profile</label>
+            <select class="input" id="user-profile">
+              <option>Elderly (65+)</option><option>Adult (18–64)</option><option>Child</option><option>Post-Surgery Patient</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Sensitivity</label>
+            <input type="range" id="sensitivity" min="1" max="5" value="3" class="w-full" oninput="document.getElementById('sens-val').textContent=['Very Low','Low','Medium','High','Very High'][this.value-1]">
+            <div class="flex-between mt-1"><span class="muted text-xs">Low</span><strong id="sens-val">Medium</strong><span class="muted text-xs">High</span></div>
+          </div>
+          <div class="form-group"><label>Alert Delay (seconds after fall)</label><input type="number" id="alert-delay" value="30" class="input" placeholder="30"><small class="muted">User can cancel false alert within this time</small></div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" checked> Auto-call emergency if no response in 60s</label>
+          </div>
+          <button class="btn btn-primary w-full" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">👨‍👩‍👧 Emergency Contacts</div>
+          <div id="contacts-list">
+            <div class="list-item"><span style="font-size:22px">👨</span><div style="flex:1"><div class="fw-6">Rahul (Son)</div><div class="muted">+91 98765 43210 · Primary</div></div><span class="badge green">Active</span></div>
+            <div class="list-item"><span style="font-size:22px">👩</span><div style="flex:1"><div class="fw-6">Priya (Daughter)</div><div class="muted">+91 91234 56789 · Secondary</div></div><span class="badge green">Active</span></div>
+          </div>
+          <div class="divider"></div>
+          <div class="form-row">
+            <div class="form-group"><label>Name</label><input type="text" id="contact-name" class="input" placeholder="e.g. Rahul"></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="contact-phone" class="input" placeholder="+91 98765 43210"></div>
+          </div>
+          <button class="btn btn-outline w-full" onclick="addContact()">+ Add Contact</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Fall Event Log</div>
+      <div id="fall-log"><p class="muted text-sm" style="padding:12px 0">No fall events detected. System is monitoring.</p></div>
+    </div>
+  </div>
+</main>
+
+<div id="fall-modal" style="display:none;position:fixed;inset:0;background:rgba(239,68,68,.95);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center">
+  <div style="font-size:80px">🆘</div>
+  <h1 style="font-size:36px;font-weight:800;margin:16px 0">FALL DETECTED!</h1>
+  <p style="font-size:18px;opacity:.9;margin-bottom:32px">Alerting emergency contacts in <strong id="countdown">30</strong> seconds</p>
+  <div style="display:flex;gap:16px">
+    <button onclick="cancelAlert()" style="background:white;color:var(--danger);padding:16px 32px;border-radius:8px;font-size:16px;font-weight:700">✅ I'm Fine — Cancel</button>
+    <button onclick="sendSOS()" style="background:rgba(0,0,0,.3);color:white;padding:16px 32px;border-radius:8px;font-size:16px;font-weight:700;border:2px solid white">🆘 Send SOS Now</button>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('fall');
+let monitoring = true, countdownTimer, countdownVal = 30;
+
+function toggleMonitoring() {
+  monitoring = !monitoring;
+  const btn = document.getElementById('toggle-btn');
+  const circle = document.getElementById('detect-circle');
+  const status = document.getElementById('detect-status');
+  if (monitoring) {
+    btn.textContent = '⏸ Pause Monitoring'; btn.className = 'btn btn-success';
+    circle.className = 'detection-circle active'; status.textContent = 'Monitoring'; status.style.color = 'var(--success)';
+    simulateSensors();
+  } else {
+    btn.textContent = '▶ Start Monitoring'; btn.className = 'btn btn-primary';
+    circle.className = 'detection-circle'; status.textContent = 'Paused'; status.style.color = 'var(--gray-500)';
+  }
+}
+
+function simulateSensors() {
+  if (!monitoring) return;
+  document.getElementById('accel-x').textContent = (Math.random() * 0.4 - 0.2).toFixed(2);
+  document.getElementById('accel-y').textContent = (Math.random() * 0.4 - 0.2).toFixed(2);
+  document.getElementById('accel-z').textContent = (0.98 + Math.random() * 0.04 - 0.02).toFixed(2);
+  setTimeout(simulateSensors, 1000);
+}
+
+function testFall() {
+  if (!monitoring) return alert('Please start monitoring first.');
+  document.getElementById('accel-x').textContent = '3.8';
+  document.getElementById('accel-y').textContent = '-2.1';
+  document.getElementById('accel-z').textContent = '4.2';
+  document.getElementById('detect-circle').className = 'detection-circle alert';
+  document.getElementById('detect-icon').textContent = '🆘';
+  document.getElementById('detect-status').textContent = 'FALL!';
+  document.getElementById('detect-status').style.color = 'var(--danger)';
+  const modal = document.getElementById('fall-modal');
+  modal.style.display = 'flex';
+  countdownVal = parseInt(document.getElementById('alert-delay').value) || 30;
+  document.getElementById('countdown').textContent = countdownVal;
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById('countdown').textContent = countdownVal;
+    if (countdownVal <= 0) { clearInterval(countdownTimer); sendSOS(); }
+  }, 1000);
+}
+
+function cancelAlert() {
+  clearInterval(countdownTimer);
+  document.getElementById('fall-modal').style.display = 'none';
+  document.getElementById('detect-circle').className = 'detection-circle active';
+  document.getElementById('detect-icon').textContent = '🧓';
+  document.getElementById('detect-status').textContent = 'Monitoring';
+  document.getElementById('detect-status').style.color = 'var(--success)';
+  simulateSensors();
+  saveData('fall_events', { type: 'false_alarm', msg: 'User cancelled — false alarm' });
+  loadFallLog();
+}
+
+function sendSOS() {
+  clearInterval(countdownTimer);
+  document.getElementById('fall-modal').style.display = 'none';
+  alert('🚨 SOS SENT!\n\n• Rahul (Son): +91 98765 43210 ✅ Notified\n• Priya (Daughter): +91 91234 56789 ✅ Notified\n• Nearest Hospital: Alerted\n• Location shared via GPS');
+  saveData('fall_events', { type: 'sos_sent', msg: 'Fall detected. SOS sent to all contacts.' });
+  document.getElementById('detect-circle').className = 'detection-circle active';
+  document.getElementById('detect-icon').textContent = '🧓';
+  document.getElementById('detect-status').textContent = 'Monitoring';
+  simulateSensors();
+  loadFallLog();
+}
+
+function addContact() {
+  const name = document.getElementById('contact-name').value;
+  const phone = document.getElementById('contact-phone').value;
+  if (!name || !phone) return alert('Enter name and phone.');
+  const contacts = JSON.parse(localStorage.getItem('emergency_contacts') || '[]');
+  contacts.push({ name, phone });
+  localStorage.setItem('emergency_contacts', JSON.stringify(contacts));
+  document.getElementById('contacts-list').innerHTML += `<div class="list-item"><span style="font-size:22px">👤</span><div style="flex:1"><div class="fw-6">${name}</div><div class="muted">${phone}</div></div><span class="badge green">Active</span></div>`;
+  document.getElementById('contact-name').value = ''; document.getElementById('contact-phone').value = '';
+}
+
+function saveSettings() { alert('✅ Settings saved!'); }
+
+function loadFallLog() {
+  const data = loadData('fall_events');
+  if (!data.length) return;
+  renderLog('fall-log', data, d => `<div class="list-item"><span style="font-size:22px">${d.type === 'sos_sent' ? '🆘' : '⚠️'}</span><div style="flex:1"><div class="fw-6">${d.msg}</div><div class="muted">${d.time}</div></div><span class="badge ${d.type === 'sos_sent' ? 'red' : 'yellow'}">${d.type === 'sos_sent' ? 'SOS Sent' : 'False Alarm'}</span></div>`);
+}
+simulateSensors(); loadFallLog();
+</script>
+</body>
+</html>

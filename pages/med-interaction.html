@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medicine Interaction | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.med-chip{display:inline-flex;align-items:center;gap:8px;background:var(--primary-light);color:var(--primary-dark);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;margin:4px;cursor:pointer;border:2px solid transparent;transition:.2s}
+.med-chip:hover,.med-chip.selected{border-color:var(--primary);background:var(--primary);color:white}
+.interaction-result{border-radius:12px;padding:20px;margin-bottom:12px}
+.interaction-severe{background:#fee2e2;border-left:5px solid var(--danger)}
+.interaction-moderate{background:var(--warning-light);border-left:5px solid var(--warning)}
+.interaction-minor{background:var(--success-light);border-left:5px solid var(--success)}
+.int-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.int-desc{font-size:13px;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">💊 Medicine Interaction Checker</h1><p class="page-sub">Dangerous drug combinations detect karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="alert alert-red mb-4" style="background:var(--danger-light);border-left:4px solid var(--danger);padding:12px 16px;border-radius:8px;color:#991b1b;font-size:13px">🚨 <strong>Warning:</strong> This tool provides general information only. NEVER stop or change medication without consulting your doctor or pharmacist.</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">💊 Select Your Medicines</div>
+        <div class="form-group">
+          <label>Search Medicine</label>
+          <input type="text" id="med-search" class="input" placeholder="Type medicine name (e.g. Aspirin)..." oninput="filterMeds()">
+        </div>
+        <div id="med-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;max-height:200px;overflow-y:auto"></div>
+        <div class="form-group">
+          <label>Selected Medicines (<span id="sel-count">0</span>):</label>
+          <div id="selected-meds" style="min-height:40px"><p class="muted text-sm">No medicines selected.</p></div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="checkInteractions()">🔍 Check Interactions</button>
+        <button class="btn btn-outline w-full mt-2" onclick="clearAll()">🗑️ Clear All</button>
+        <div class="divider"></div>
+        <div class="card-title" style="font-size:14px">Add Custom Medicine</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="custom-med" class="input" placeholder="Medicine name...">
+          <button class="btn btn-primary" onclick="addCustomMed()">Add</button>
+        </div>
+      </div>
+
+      <div>
+        <div id="interaction-results">
+          <div class="card" style="text-align:center;padding:40px">
+            <div style="font-size:56px;margin-bottom:12px">💊</div>
+            <p class="fw-6">Select at least 2 medicines to check interactions</p>
+            <p class="muted text-sm mt-2">We'll warn you about dangerous combinations</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('med-interaction');
+const selectedMeds = new Set();
+
+const MEDICINES = [
+  'Aspirin','Paracetamol (Crocin)','Ibuprofen','Metformin','Atorvastatin','Amlodipine',
+  'Atenolol','Losartan','Warfarin','Clopidogrel','Omeprazole','Pantoprazole',
+  'Azithromycin','Ciprofloxacin','Amoxicillin','Metronidazole','Cetirizine',
+  'Montelukast','Salbutamol','Sertraline','Fluoxetine','Alprazolam','Diazepam',
+  'Insulin','Glibenclamide','Digoxin','Furosemide','Spironolactone','Levothyroxine',
+  'Prednisolone','Dexamethasone','Hydroxychloroquine','Methotrexate','Rifampicin'
+];
+
+const INTERACTIONS = [
+  { drugs: ['Aspirin','Warfarin'], severity: 'severe', effect: 'Severe bleeding risk. This combination can cause dangerous internal bleeding. Requires strict medical supervision.', action: 'Do NOT combine without doctor supervision. INR monitoring required.' },
+  { drugs: ['Aspirin','Ibuprofen'], severity: 'moderate', effect: 'Ibuprofen may block aspirin\'s heart-protective effect. Both increase bleeding and stomach ulcer risk.', action: 'Take aspirin 1 hour before ibuprofen. Prefer paracetamol instead.' },
+  { drugs: ['Warfarin','Metronidazole'], severity: 'severe', effect: 'Metronidazole significantly increases warfarin levels, causing severe bleeding risk.', action: 'Avoid combination. If necessary, reduce warfarin dose and monitor INR closely.' },
+  { drugs: ['Sertraline','Fluoxetine'], severity: 'severe', effect: 'Serotonin syndrome — life-threatening. Symptoms: agitation, confusion, rapid heart rate, high temperature.', action: '🚨 DO NOT combine two SSRIs. Consult psychiatrist immediately.' },
+  { drugs: ['Sertraline','Alprazolam'], severity: 'moderate', effect: 'Increased sedation, dizziness. Alprazolam levels may increase. Risk of over-sedation.', action: 'Use with caution. Avoid driving. Consult doctor about dosage.' },
+  { drugs: ['Metformin','Furosemide'], severity: 'moderate', effect: 'Furosemide may increase metformin levels, raising lactic acidosis risk.', action: 'Monitor kidney function and blood glucose closely.' },
+  { drugs: ['Atorvastatin','Azithromycin'], severity: 'moderate', effect: 'Azithromycin can increase statin levels, raising muscle damage (myopathy) risk.', action: 'Temporary dose reduction may be needed. Monitor for muscle pain.' },
+  { drugs: ['Digoxin','Furosemide'], severity: 'severe', effect: 'Furosemide causes potassium loss, increasing digoxin toxicity risk (heart arrhythmia).', action: 'Monitor potassium and digoxin levels. Consider potassium supplement.' },
+  { drugs: ['Ciprofloxacin','Antacids'], severity: 'minor', effect: 'Antacids reduce ciprofloxacin absorption by up to 90%.', action: 'Take ciprofloxacin 2 hours before or 6 hours after antacid.' },
+  { drugs: ['Aspirin','Methotrexate'], severity: 'severe', effect: 'Aspirin reduces methotrexate clearance, causing toxic buildup. Risk of bone marrow suppression.', action: '🚨 Avoid combination. Use paracetamol for pain instead.' },
+  { drugs: ['Prednisolone','Ibuprofen'], severity: 'moderate', effect: 'Both increase risk of stomach ulcers and GI bleeding.', action: 'Add a proton pump inhibitor (omeprazole/pantoprazole) as protection.' },
+  { drugs: ['Levothyroxine','Omeprazole'], severity: 'minor', effect: 'Omeprazole may reduce levothyroxine absorption.', action: 'Take levothyroxine on empty stomach, 30–60 min before omeprazole.' },
+];
+
+function filterMeds() {
+  const q = document.getElementById('med-search').value.toLowerCase();
+  const filtered = MEDICINES.filter(m => m.toLowerCase().includes(q));
+  renderMedList(filtered);
+}
+
+function renderMedList(list) {
+  document.getElementById('med-list').innerHTML = list.map(m =>
+    `<span class="med-chip ${selectedMeds.has(m) ? 'selected' : ''}" onclick="toggleMed('${m}')">${m}</span>`).join('');
+}
+
+function toggleMed(m) { selectedMeds.has(m) ? selectedMeds.delete(m) : selectedMeds.add(m); updateSelected(); filterMeds(); }
+function addCustomMed() { const m = document.getElementById('custom-med').value.trim(); if (!m) return; selectedMeds.add(m); document.getElementById('custom-med').value = ''; updateSelected(); }
+function clearAll() { selectedMeds.clear(); updateSelected(); filterMeds(); document.getElementById('interaction-results').innerHTML = '<div class="card" style="text-align:center;padding:40px"><div style="font-size:56px;margin-bottom:12px">💊</div><p class="fw-6">Select at least 2 medicines to check interactions</p></div>'; }
+
+function updateSelected() {
+  document.getElementById('sel-count').textContent = selectedMeds.size;
+  const el = document.getElementById('selected-meds');
+  el.innerHTML = [...selectedMeds].map(m => `<span class="med-chip selected" onclick="toggleMed('${m}')">${m} ✕</span>`).join('') || '<p class="muted text-sm">No medicines selected.</p>';
+}
+
+function checkInteractions() {
+  if (selectedMeds.size < 2) return alert('Please select at least 2 medicines.');
+  const meds = [...selectedMeds];
+  const found = [];
+  INTERACTIONS.forEach(interaction => {
+    const match = interaction.drugs.every(d => meds.some(m => m.toLowerCase().includes(d.toLowerCase())));
+    if (match) found.push(interaction);
+  });
+
+  const severeCount = found.filter(f => f.severity === 'severe').length;
+  const header = severeCount > 0
+    ? `<div class="alert" style="background:var(--danger-light);border-left:4px solid var(--danger);color:#991b1b;padding:14px;border-radius:8px;margin-bottom:16px;font-weight:700">🚨 ${severeCount} SEVERE interaction(s) found! Consult your doctor immediately.</div>`
+    : found.length > 0
+    ? `<div class="alert alert-yellow mb-4">⚠️ ${found.length} interaction(s) found. Review carefully.</div>`
+    : `<div class="alert alert-green mb-4">✅ No known dangerous interactions found for selected medicines.</div>`;
+
+  document.getElementById('interaction-results').innerHTML = `<div class="card">
+    <div class="card-title">🔍 Interaction Results</div>
+    ${header}
+    ${found.length ? found.map(f => `
+      <div class="interaction-result ${f.severity === 'severe' ? 'interaction-severe' : f.severity === 'moderate' ? 'interaction-moderate' : 'interaction-minor'}">
+        <div class="int-title">${f.severity === 'severe' ? '🚨' : f.severity === 'moderate' ? '⚠️' : 'ℹ️'} ${f.drugs.join(' + ')} — ${f.severity.toUpperCase()}</div>
+        <div class="int-desc">${f.effect}</div>
+        <div class="int-desc" style="margin-top:8px;font-weight:600">👨‍⚕️ ${f.action}</div>
+      </div>`).join('') : '<p class="muted text-sm">No recorded interactions between these medicines in our database.</p>'}
+  </div>`;
+}
+
+renderMedList(MEDICINES);
+</script>
+</body>
+</html>

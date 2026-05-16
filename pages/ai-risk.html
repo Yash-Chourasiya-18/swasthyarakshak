@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Disease Risk | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.risk-meter{height:24px;border-radius:20px;background:var(--gray-100);overflow:hidden;margin:12px 0}
+.risk-fill{height:100%;border-radius:20px;transition:width 1s ease;display:flex;align-items:center;padding-left:12px;font-size:11px;font-weight:700;color:white}
+.disease-card{border:1px solid var(--gray-200);border-radius:10px;padding:16px;margin-bottom:10px;transition:.2s}
+.disease-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.risk-low{border-left:4px solid var(--success)}
+.risk-medium{border-left:4px solid var(--warning)}
+.risk-high{border-left:4px solid var(--danger)}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🤖 AI Disease Risk Prediction</h1><p class="page-sub">Vitals se possible health risks analyze karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📊 Enter Your Health Data</div>
+        <div class="form-row">
+          <div class="form-group"><label>Age</label><input type="number" id="r-age" placeholder="25" class="input"></div>
+          <div class="form-group"><label>Gender</label><select id="r-gender" class="input"><option>Male</option><option>Female</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Systolic BP (mmHg)</label><input type="number" id="r-bp" placeholder="120" class="input"></div>
+          <div class="form-group"><label>Blood Sugar (mg/dL)</label><input type="number" id="r-sugar" placeholder="100" class="input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>BMI</label><input type="number" id="r-bmi" placeholder="22.5" step="0.1" class="input"></div>
+          <div class="form-group"><label>SpO2 (%)</label><input type="number" id="r-spo2" placeholder="98" class="input"></div>
+        </div>
+        <div class="form-group"><label>Lifestyle</label>
+          <div class="symptoms-tags" id="lifestyle-tags">
+            <span class="tag" onclick="toggleTag(this)">🚬 Smoker</span>
+            <span class="tag" onclick="toggleTag(this)">🍺 Drinks Alcohol</span>
+            <span class="tag" onclick="toggleTag(this)">🛋️ Sedentary</span>
+            <span class="tag" onclick="toggleTag(this)">😰 High Stress</span>
+            <span class="tag" onclick="toggleTag(this)">🧂 High Salt Diet</span>
+            <span class="tag" onclick="toggleTag(this)">🍟 Junk Food</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Family History</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">❤️ Heart Disease</span>
+            <span class="tag" onclick="toggleTag(this)">🩸 Diabetes</span>
+            <span class="tag" onclick="toggleTag(this)">🧠 Stroke</span>
+            <span class="tag" onclick="toggleTag(this)">🫁 Lung Disease</span>
+            <span class="tag" onclick="toggleTag(this)">🎗️ Cancer</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="analyzeRisk()">🔍 Analyze Health Risks</button>
+      </div>
+
+      <div>
+        <div class="card mb-4" id="result-card" style="display:none">
+          <div class="card-title">🧬 Risk Analysis Results</div>
+          <div id="overall-risk"></div>
+          <div class="divider"></div>
+          <div id="disease-risks"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ℹ️ How It Works</div>
+          <div class="alert alert-blue">🤖 This AI uses a rule-based model trained on clinical guidelines from WHO, AHA & ICMR to estimate your risk levels based on vitals + lifestyle + family history.</div>
+          <div class="divider"></div>
+          <div class="list-item"><span style="font-size:20px">🟢</span><div><div class="fw-6">Low Risk (0–30%)</div><div class="muted text-sm">Maintain healthy lifestyle</div></div></div>
+          <div class="list-item"><span style="font-size:20px">🟡</span><div><div class="fw-6">Medium Risk (30–60%)</div><div class="muted text-sm">Regular checkups recommended</div></div></div>
+          <div class="list-item"><span style="font-size:20px">🔴</span><div><div class="fw-6">High Risk (60%+)</div><div class="muted text-sm">Consult doctor immediately</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ai-risk');
+
+function analyzeRisk() {
+  const age = parseInt(document.getElementById('r-age').value) || 30;
+  const bp = parseInt(document.getElementById('r-bp').value) || 120;
+  const sugar = parseInt(document.getElementById('r-sugar').value) || 100;
+  const bmi = parseFloat(document.getElementById('r-bmi').value) || 22;
+  const spo2 = parseInt(document.getElementById('r-spo2').value) || 98;
+  const lifestyle = [...document.querySelectorAll('.tag.selected')].map(t => t.textContent.trim());
+  const smoker = lifestyle.some(l => l.includes('Smoker'));
+  const sedentary = lifestyle.some(l => l.includes('Sedentary'));
+  const stress = lifestyle.some(l => l.includes('Stress'));
+  const junk = lifestyle.some(l => l.includes('Junk'));
+
+  const diseases = [
+    {
+      name: '❤️ Cardiovascular Disease', icon: '❤️',
+      score: calcScore([
+        [age > 50, 20], [age > 65, 15], [bp > 140, 25], [bp > 160, 15],
+        [smoker, 20], [bmi > 30, 10], [sedentary, 10], [stress, 10]
+      ]),
+      tips: 'Exercise 30min daily, reduce salt, quit smoking, check BP weekly.'
+    },
+    {
+      name: '🩸 Type 2 Diabetes', icon: '🩸',
+      score: calcScore([
+        [sugar > 100, 15], [sugar > 125, 25], [bmi > 27, 15], [bmi > 30, 10],
+        [age > 45, 10], [sedentary, 15], [junk, 15], [lifestyle.some(l=>l.includes('Diabetes')), 20]
+      ]),
+      tips: 'Reduce sugar, increase fiber, walk 30min after meals, test HbA1c every 3 months.'
+    },
+    {
+      name: '🧠 Stroke Risk', icon: '🧠',
+      score: calcScore([
+        [bp > 140, 25], [bp > 160, 15], [age > 55, 15], [smoker, 20],
+        [lifestyle.some(l=>l.includes('Stroke')), 20], [stress, 10]
+      ]),
+      tips: 'Control BP strictly, take aspirin only if prescribed, avoid smoking.'
+    },
+    {
+      name: '🫁 Respiratory Disease', icon: '🫁',
+      score: calcScore([
+        [spo2 < 95, 30], [spo2 < 92, 20], [smoker, 30], [lifestyle.some(l=>l.includes('Lung')), 20]
+      ]),
+      tips: 'Stop smoking immediately, use air purifier at home, practice breathing exercises.'
+    },
+    {
+      name: '⚖️ Obesity-related Risks', icon: '⚖️',
+      score: calcScore([
+        [bmi > 25, 20], [bmi > 30, 25], [bmi > 35, 20], [sedentary, 20], [junk, 20]
+      ]),
+      tips: 'Calorie deficit of 500kcal/day, strength training 3x/week, reduce processed foods.'
+    }
+  ];
+
+  const overall = Math.round(diseases.reduce((a, d) => a + d.score, 0) / diseases.length);
+  const overallCls = overall < 30 ? 'green' : overall < 60 ? 'yellow' : 'red';
+  const overallLabel = overall < 30 ? '✅ Low Risk' : overall < 60 ? '⚠️ Moderate Risk' : '🚨 High Risk';
+
+  document.getElementById('result-card').style.display = 'block';
+  document.getElementById('overall-risk').innerHTML = `
+    <div style="text-align:center;padding:16px 0">
+      <div style="font-size:48px;font-weight:800;color:var(--${overallCls === 'green' ? 'success' : overallCls === 'yellow' ? 'warning' : 'danger'})">${overall}%</div>
+      <div style="font-size:18px;font-weight:700;margin-top:4px">${overallLabel}</div>
+      <div class="muted text-sm mt-2">Overall Health Risk Score</div>
+    </div>`;
+
+  document.getElementById('disease-risks').innerHTML = diseases.map(d => {
+    const cls = d.score < 30 ? 'success' : d.score < 60 ? 'warning' : 'danger';
+    const rCls = d.score < 30 ? 'risk-low' : d.score < 60 ? 'risk-medium' : 'risk-high';
+    return `<div class="disease-card ${rCls}">
+      <div class="flex-between mb-2"><span class="fw-6">${d.name}</span><span class="badge ${d.score<30?'green':d.score<60?'yellow':'red'}">${d.score}%</span></div>
+      <div class="risk-meter"><div class="risk-fill" style="width:${d.score}%;background:var(--${cls})">${d.score > 20 ? d.score+'%' : ''}</div></div>
+      <p class="muted text-sm mt-2">💡 ${d.tips}</p>
+    </div>`;
+  }).join('');
+}
+
+function calcScore(factors) {
+  return Math.min(factors.reduce((sum, [cond, w]) => sum + (cond ? w : 0), 0), 100);
+}
+</script>
+</body>
+</html>

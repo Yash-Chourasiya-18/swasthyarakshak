@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpO2 Monitor | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🫁 SpO2 Oxygen Monitor</h1><p class="page-sub">Track blood oxygen saturation levels</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card blue"><div class="stat-icon">🫁</div><div class="stat-val" id="last-spo2">–%</div><div class="stat-lbl">Last SpO2 Reading</div><span class="badge green" id="spo2-status">No data</span></div>
+      <div class="stat-card"><div class="stat-icon">💓</div><div class="stat-val" id="last-hr">–</div><div class="stat-lbl">Last Heart Rate (bpm)</div></div>
+      <div class="stat-card red"><div class="stat-icon">📉</div><div class="stat-val" id="spo2-low">–%</div><div class="stat-lbl">7-day Low</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log SpO2 Reading</div>
+        <div class="form-group"><label>Oxygen Level (%)</label><input type="number" id="spo2-val" placeholder="95–100" min="50" max="100" class="input"></div>
+        <div class="form-group"><label>Heart Rate (bpm)</label><input type="number" id="spo2-hr" placeholder="72" class="input"></div>
+        <div class="form-group"><label>Activity at Time of Reading</label>
+          <select id="spo2-activity" class="input">
+            <option>Resting</option><option>After Light Exercise</option>
+            <option>After Intense Exercise</option><option>During Sleep (via device)</option><option>At Altitude</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Symptoms (if any)</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">Shortness of Breath</span>
+            <span class="tag" onclick="toggleTag(this)">Dizziness</span>
+            <span class="tag" onclick="toggleTag(this)">Chest Pain</span>
+            <span class="tag" onclick="toggleTag(this)">Fatigue</span>
+            <span class="tag" onclick="toggleTag(this)">Cough</span>
+            <span class="tag" onclick="toggleTag(this)">Headache</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="logSpO2()">💾 Save Reading</button>
+        <div id="spo2-alert" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SpO2 History</div>
+        <div class="bar-chart" id="spo2-chart"></div>
+        <div class="divider"></div>
+        <div id="spo2-log"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">SpO2 Level Guide</div>
+      <div class="risk-list">
+        <div class="risk-row green">✅ 95–100% — Normal. Healthy oxygen levels.</div>
+        <div class="risk-row yellow">⚡ 91–94% — Mild Hypoxemia. Monitor closely, consult doctor if persistent.</div>
+        <div class="risk-row orange">⚠️ 86–90% — Moderate Hypoxemia. Seek medical attention soon.</div>
+        <div class="risk-row red">🚨 Below 85% — Severe Emergency! Call 108 immediately.</div>
+      </div>
+      <div class="alert alert-blue mt-3">💡 Tip: Pulse oximeters are best used on fingers at rest. Cold hands can affect accuracy.</div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('spo2');
+
+function getSpO2Status(val) {
+  if (val >= 95) return { label: '✅ Normal', cls: 'green', alert: false };
+  if (val >= 91) return { label: '⚡ Mild Low', cls: 'yellow', alert: true };
+  if (val >= 86) return { label: '⚠️ Moderate Low', cls: 'red', alert: true };
+  return { label: '🚨 Critical! Call 108', cls: 'red', alert: true };
+}
+
+function logSpO2() {
+  const val = parseInt(document.getElementById('spo2-val').value);
+  const hr = document.getElementById('spo2-hr').value;
+  const activity = document.getElementById('spo2-activity').value;
+  if (!val || val < 50 || val > 100) return alert('Please enter a valid SpO2 value (50–100).');
+  const status = getSpO2Status(val);
+  saveData('spo2_readings', { val, hr, activity, status: status.label });
+  const alertBox = document.getElementById('spo2-alert');
+  alertBox.className = `alert ${status.alert ? 'alert-red' : 'alert-green'}`;
+  alertBox.textContent = status.alert
+    ? `⚠️ SpO2 ${val}% — ${status.label}! Please seek medical attention.`
+    : `✅ SpO2 ${val}% saved successfully. Levels are normal.`;
+  document.getElementById('spo2-val').value = '';
+  document.getElementById('spo2-hr').value = '';
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('spo2_readings');
+  if (data.length) {
+    const last = data[0];
+    document.getElementById('last-spo2').textContent = `${last.val}%`;
+    document.getElementById('last-hr').textContent = last.hr || '–';
+    const s = document.getElementById('spo2-status');
+    s.textContent = last.status;
+    s.className = `badge ${last.status.includes('Normal') ? 'green' : 'red'}`;
+    const lows = data.map(d => d.val);
+    document.getElementById('spo2-low').textContent = `${Math.min(...lows)}%`;
+  }
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('spo2-chart', recent.map(d => d.val), recent.map((_, i) => `#${i + 1}`), '#0ea5e9');
+  renderLog('spo2-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:24px">🫁</span>
+      <div style="flex:1"><div class="fw-6">SpO2: ${d.val}% <small class="muted">· HR: ${d.hr || '–'} bpm</small></div><div class="muted">${d.activity}</div></div>
+      <span class="badge ${d.status.includes('Normal') ? 'green' : 'red'}">${d.status}</span>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

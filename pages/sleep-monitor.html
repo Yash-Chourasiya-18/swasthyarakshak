@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sleep Monitor | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">😴 Sleep Monitor</h1><p class="page-sub">Sleep duration & quality tracking</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card blue"><div class="stat-icon">😴</div><div class="stat-val" id="last-sleep">–</div><div class="stat-lbl">Last Night (hours)</div><span class="badge green" id="sleep-quality-badge">–</span></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="sleep-avg">–h</div><div class="stat-lbl">7-day Average</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">🌙</div><div class="stat-val" id="sleep-streak">0</div><div class="stat-lbl">Good Sleep Streak</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Sleep</div>
+        <div class="form-row">
+          <div class="form-group"><label>Bedtime</label><input type="time" id="sleep-start" value="22:00" class="input"></div>
+          <div class="form-group"><label>Wake Time</label><input type="time" id="sleep-end" value="06:30" class="input"></div>
+        </div>
+        <div class="form-group"><label>Sleep Quality</label>
+          <div class="mood-grid-big" id="quality-selector">
+            <div class="mood-big" onclick="selectQuality(this,1)">😞<span>Poor</span></div>
+            <div class="mood-big" onclick="selectQuality(this,2)">😐<span>Fair</span></div>
+            <div class="mood-big" onclick="selectQuality(this,3)">🙂<span>Good</span></div>
+            <div class="mood-big" onclick="selectQuality(this,4)">😊<span>Great</span></div>
+            <div class="mood-big" onclick="selectQuality(this,5)">😄<span>Excellent</span></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Sleep Issues</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">Snoring</span>
+            <span class="tag" onclick="toggleTag(this)">Woke Up Often</span>
+            <span class="tag" onclick="toggleTag(this)">Nightmares</span>
+            <span class="tag" onclick="toggleTag(this)">Restless Legs</span>
+            <span class="tag" onclick="toggleTag(this)">Late to Sleep</span>
+            <span class="tag" onclick="toggleTag(this)">Early Wake</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Notes</label><input type="text" id="sleep-notes" placeholder="How do you feel after waking?" class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logSleep()">💾 Save Sleep Log</button>
+        <div id="sleep-alert" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sleep Duration (Weekly)</div>
+        <div class="bar-chart" id="sleep-chart"></div>
+        <div class="divider"></div>
+        <div class="card-title" style="margin-top:0;font-size:14px">Last Night — Sleep Stages</div>
+        <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;margin-bottom:8px">
+          <div style="width:15%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:600">Deep</div>
+          <div style="width:45%;background:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:600">REM</div>
+          <div style="width:30%;background:#a78bfa;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:600">Light</div>
+          <div style="width:10%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#64748b;font-weight:600">Awake</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500)"><span style="width:10px;height:10px;border-radius:50%;background:#6366f1;display:inline-block"></span>Deep 15%</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500)"><span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;display:inline-block"></span>REM 45%</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500)"><span style="width:10px;height:10px;border-radius:50%;background:#a78bfa;display:inline-block"></span>Light 30%</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500)"><span style="width:10px;height:10px;border-radius:50%;background:#e2e8f0;display:inline-block"></span>Awake 10%</span>
+        </div>
+        <div class="divider"></div>
+        <div id="sleep-log"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">😴 Sleep Recommendations</div>
+      <div class="risk-list">
+        <div class="risk-row red">⚠️ Less than 6 hours — Not enough. Affects immunity & cognition.</div>
+        <div class="risk-row yellow">⚡ 6–7 hours — Below optimal. Try to add 1 more hour.</div>
+        <div class="risk-row green">✅ 7–9 hours — Ideal for adults. Great for your health!</div>
+        <div class="risk-row yellow">⚡ More than 9 hours — May indicate fatigue or health issues.</div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('sleep');
+let selectedQuality = 3;
+function selectQuality(el, val) {
+  document.querySelectorAll('#quality-selector .mood-big').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected'); selectedQuality = val;
+}
+
+function calcHours(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let mins = (eh * 60 + em) - (sh * 60 + sm);
+  if (mins < 0) mins += 24 * 60;
+  return (mins / 60).toFixed(1);
+}
+
+function logSleep() {
+  const start = document.getElementById('sleep-start').value;
+  const end = document.getElementById('sleep-end').value;
+  const notes = document.getElementById('sleep-notes').value;
+  const hours = parseFloat(calcHours(start, end));
+  const qualityLabels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'];
+  const quality = qualityLabels[selectedQuality];
+  saveData('sleep_logs', { hours, start, end, quality, selectedQuality, notes });
+  const alertBox = document.getElementById('sleep-alert');
+  if (hours < 6) {
+    alertBox.className = 'alert alert-red';
+    alertBox.textContent = `⚠️ Only ${hours}h sleep! Recommended: 7–9 hours. Try to sleep earlier tonight.`;
+  } else if (hours >= 7 && hours <= 9) {
+    alertBox.className = 'alert alert-green';
+    alertBox.textContent = `✅ ${hours}h sleep logged. Excellent! You're meeting the recommended target.`;
+  } else {
+    alertBox.className = 'alert alert-yellow';
+    alertBox.textContent = `💛 ${hours}h sleep logged. Try to aim for 7–9 hours.`;
+  }
+  document.getElementById('sleep-notes').value = '';
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('sleep_logs');
+  if (data.length) {
+    const last = data[0];
+    document.getElementById('last-sleep').textContent = `${last.hours}h`;
+    const qb = document.getElementById('sleep-quality-badge');
+    qb.textContent = last.quality;
+    qb.className = `badge ${last.selectedQuality >= 4 ? 'green' : last.selectedQuality <= 2 ? 'red' : 'yellow'}`;
+    const vals = data.slice(0, 7).map(d => parseFloat(d.hours));
+    const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+    document.getElementById('sleep-avg').textContent = `${avg}h`;
+    const streak = data.filter(d => parseFloat(d.hours) >= 7).length;
+    document.getElementById('sleep-streak').textContent = streak;
+  }
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('sleep-chart', recent.map(d => d.hours), ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].slice(-recent.length), '#8b5cf6');
+  renderLog('sleep-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:22px">🌙</span>
+      <div style="flex:1"><div class="fw-6">${d.hours} hours <small class="muted">· ${d.start} → ${d.end}</small></div><div class="muted">${d.quality} · ${d.notes || 'No notes'}</div></div>
+      <span class="badge ${d.selectedQuality >= 4 ? 'green' : d.selectedQuality <= 2 ? 'red' : 'yellow'}">${d.quality}</span>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

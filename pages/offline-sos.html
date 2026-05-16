@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline Emergency | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.offline-hero{background:linear-gradient(135deg,#1e293b,#0f172a);color:white;border-radius:16px;padding:32px;text-align:center;margin-bottom:24px}
+.offline-hero h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.offline-status{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:20px;font-weight:700;margin-top:12px}
+.sms-preview{background:var(--gray-900);color:white;border-radius:12px;padding:20px;font-family:monospace;font-size:13px;line-height:1.7}
+.sms-header{color:var(--primary);font-weight:700;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">📵 Offline Emergency Mode</h1><p class="page-sub">Internet bina bhi SOS SMS bhejna</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <div class="offline-hero">
+      <div style="font-size:56px;margin-bottom:12px">📵</div>
+      <h2>Works Without Internet!</h2>
+      <p style="opacity:.8">Emergency SMS & calls work even when there is no WiFi or mobile data. Only basic network signal required.</p>
+      <div class="offline-status" id="net-status" style="background:rgba(34,197,94,.2);color:#4ade80">
+        <span style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>
+        Online — SMS & Internet Available
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">📱 Pre-configured Emergency SMS</div>
+          <p class="muted text-sm mb-4">These SMS will be sent automatically when you're offline and press SOS</p>
+          <div class="sms-preview">
+            <div class="sms-header">📨 EMERGENCY SOS MESSAGE PREVIEW:</div>
+            <div id="sms-preview-text">
+🆘 EMERGENCY! I need help!<br>
+Name: Yash Tyagi<br>
+Blood: B+ | Allergies: Penicillin<br>
+Last Location: 28.6139°N, 77.2090°E<br>
+Time: --:-- --<br>
+Please send help immediately!<br>
+Call: 108 (Ambulance)
+            </div>
+          </div>
+          <button class="btn btn-primary w-full mt-3" onclick="updateSMSPreview()">🔄 Refresh Preview</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📞 Offline Emergency Contacts</div>
+          <p class="muted text-sm mb-4">SMS will be sent to these numbers even without internet</p>
+          <div id="offline-contacts">
+            <div class="list-item"><span style="font-size:22px">👨</span><div style="flex:1"><div class="fw-6">Rahul (Son)</div><div class="muted">+91 98765 43210</div></div><span class="badge green">SMS Ready</span></div>
+            <div class="list-item"><span style="font-size:22px">👩</span><div style="flex:1"><div class="fw-6">Priya (Daughter)</div><div class="muted">+91 91234 56789</div></div><span class="badge green">SMS Ready</span></div>
+          </div>
+          <div class="divider"></div>
+          <div class="form-row">
+            <div class="form-group"><label>Name</label><input type="text" id="oc-name" class="input" placeholder="Contact name"></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="oc-phone" class="input" placeholder="+91 XXXXX XXXXX"></div>
+          </div>
+          <button class="btn btn-outline w-full" onclick="addOfflineContact()">+ Add Contact</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">🆘 Offline SOS Button</div>
+          <p class="muted text-sm mb-4">Press this when you have no internet. Works via SMS network.</p>
+          <button onclick="sendOfflineSOS()" style="width:100%;padding:24px;background:var(--danger);color:white;border-radius:12px;font-size:22px;font-weight:800;border:none;cursor:pointer;animation:sosBeat 1.5s infinite;box-shadow:0 0 30px rgba(239,68,68,.4)">🆘 SEND OFFLINE SOS</button>
+          <div class="alert alert-blue mt-3">💡 This uses your phone's SMS service (GSM). Works even with 1 bar of signal, no data plan needed.</div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-title">💾 Offline Data Cache</div>
+          <p class="muted text-sm mb-4">This data is stored locally and available offline</p>
+          <div id="cached-data">
+            <div class="list-item"><span style="font-size:20px">❤️</span><div style="flex:1"><div class="fw-6">Last Vitals</div><div class="muted" id="cached-vitals">Loading...</div></div><span class="badge green">Cached</span></div>
+            <div class="list-item"><span style="font-size:20px">🪪</span><div style="flex:1"><div class="fw-6">Medical ID</div><div class="muted" id="cached-medid">Loading...</div></div><span class="badge green">Cached</span></div>
+            <div class="list-item"><span style="font-size:20px">📞</span><div style="flex:1"><div class="fw-6">Emergency Contacts</div><div class="muted" id="cached-contacts">Loading...</div></div><span class="badge green">Cached</span></div>
+          </div>
+          <button class="btn btn-outline w-full mt-3" onclick="refreshCache()">🔄 Refresh Cache</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Offline SOS Log</div>
+          <div id="offline-log"><p class="muted text-sm" style="padding:8px 0">No offline SOS events.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<style>
+@keyframes sosBeat{0%,100%{box-shadow:0 0 30px rgba(239,68,68,.4)}50%{box-shadow:0 0 50px rgba(239,68,68,.7)}}
+</style>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('offline-sos');
+
+function updateSMSPreview() {
+  const medId = JSON.parse(localStorage.getItem('medical_id') || '{}');
+  const now = new Date().toLocaleString('en-IN');
+  document.getElementById('sms-preview-text').innerHTML =
+    `🆘 EMERGENCY! I need help!<br>Name: ${medId.name || 'Unknown'}<br>Blood: ${medId.blood || '–'} | Allergies: ${medId.allergies || '–'}<br>Last Location: 28.6139°N, 77.2090°E<br>Time: ${now}<br>Conditions: ${medId.conditions || '–'}<br>Please send help immediately!<br>Call: 108 (Ambulance)`;
+}
+
+function sendOfflineSOS() {
+  if (confirm('🆘 OFFLINE SOS\n\nThis will send emergency SMS to:\n• Rahul: +91 98765 43210\n• Priya: +91 91234 56789\n\nSMS works without internet.\nProceed?')) {
+    saveData('offline_sos', { method: 'SMS', status: 'Sent', contacts: 'Rahul, Priya' });
+    loadOfflineLog();
+    // Try native SMS if on mobile
+    const medId = JSON.parse(localStorage.getItem('medical_id') || '{}');
+    const msg = encodeURIComponent(`🆘 EMERGENCY! ${medId.name || 'I'} need help! Blood: ${medId.blood || '–'}. Send ambulance. Location: Google Maps link unavailable offline.`);
+    window.open(`sms:+919876543210?body=${msg}`, '_blank');
+    alert('✅ SMS Emergency sent!\n\nIf SMS didn\'t open, manually call 108 or your contacts.\n\nStay safe!');
+  }
+}
+
+function addOfflineContact() {
+  const name = document.getElementById('oc-name').value;
+  const phone = document.getElementById('oc-phone').value;
+  if (!name || !phone) return alert('Enter name and phone.');
+  document.getElementById('offline-contacts').innerHTML += `<div class="list-item"><span style="font-size:22px">👤</span><div style="flex:1"><div class="fw-6">${name}</div><div class="muted">${phone}</div></div><span class="badge green">SMS Ready</span></div>`;
+  document.getElementById('oc-name').value = ''; document.getElementById('oc-phone').value = '';
+}
+
+function refreshCache() {
+  const medId = JSON.parse(localStorage.getItem('medical_id') || '{}');
+  const bp = loadData('bp_readings')[0];
+  document.getElementById('cached-medid').textContent = medId.name ? `${medId.name} · ${medId.blood || '–'}` : 'Not set — add in Medical ID';
+  document.getElementById('cached-vitals').textContent = bp ? `Last BP: ${bp.sys}/${bp.dia} mmHg` : 'No vitals logged yet';
+  document.getElementById('cached-contacts').textContent = '2 contacts ready';
+}
+
+function loadOfflineLog() {
+  const data = loadData('offline_sos');
+  renderLog('offline-log', data, d => `<div class="list-item"><span style="font-size:22px">📵</span><div style="flex:1"><div class="fw-6">Offline SOS Sent via ${d.method}</div><div class="muted">To: ${d.contacts} · ${d.time}</div></div><span class="badge red">SOS</span></div>`);
+}
+
+// Network status
+window.addEventListener('online', () => {
+  document.getElementById('net-status').style.background = 'rgba(34,197,94,.2)';
+  document.getElementById('net-status').innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span> Online — SMS & Internet Available';
+});
+window.addEventListener('offline', () => {
+  document.getElementById('net-status').style.background = 'rgba(239,68,68,.2)';
+  document.getElementById('net-status').innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block"></span> OFFLINE — SMS Only Mode Active';
+});
+
+updateSMSPreview();
+refreshCache();
+loadOfflineLog();
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Symptom Checker | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.condition-card{border:1px solid var(--gray-200);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;transition:.2s}
+.condition-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.match-bar{height:8px;background:var(--gray-100);border-radius:20px;margin:8px 0;overflow:hidden}
+.match-fill{height:100%;border-radius:20px}
+.severity-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.sev-low{background:var(--success-light);color:#166534}
+.sev-med{background:var(--warning-light);color:#92400e}
+.sev-high{background:var(--danger-light);color:#991b1b}
+.symptom-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);color:var(--primary-dark);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;margin:4px;cursor:pointer}
+.symptom-chip .x{font-size:14px;line-height:1}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🔍 Smart Symptom Checker</h1><p class="page-sub">Symptoms → possible condition estimate</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="alert alert-yellow mb-4">⚠️ <strong>Disclaimer:</strong> This tool is for informational purposes only. It is NOT a substitute for professional medical advice. Always consult a doctor for diagnosis.</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Select Your Symptoms</div>
+        <div class="form-group">
+          <label>Added Symptoms:</label>
+          <div id="selected-symptoms" style="min-height:36px;margin-bottom:12px"><p class="muted text-sm">No symptoms added yet. Pick below.</p></div>
+        </div>
+        <div class="form-group">
+          <label>Search & Add Symptom</label>
+          <input type="text" id="symptom-search" class="input" placeholder="Type symptom name..." oninput="filterSymptoms()">
+        </div>
+        <div id="symptom-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;max-height:300px;overflow-y:auto"></div>
+        <div class="divider"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Duration</label>
+            <select id="duration" class="input"><option>Today</option><option>2–3 days</option><option>1 week</option><option>2+ weeks</option><option>Chronic</option></select>
+          </div>
+          <div class="form-group"><label>Severity</label>
+            <select id="severity" class="input"><option>Mild</option><option>Moderate</option><option>Severe</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="checkSymptoms()">🔍 Check Symptoms</button>
+      </div>
+
+      <div>
+        <div id="results-area">
+          <div class="card" style="text-align:center;padding:40px">
+            <div style="font-size:56px;margin-bottom:12px">🔍</div>
+            <p class="fw-6">Add symptoms and click "Check"</p>
+            <p class="muted text-sm mt-2">We'll suggest possible conditions based on your symptoms</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('symptom-checker');
+const selectedSymptoms = new Set();
+
+const ALL_SYMPTOMS = [
+  'Fever','Headache','Cough','Sore Throat','Runny Nose','Body Ache','Fatigue','Nausea',
+  'Vomiting','Diarrhea','Chest Pain','Shortness of Breath','Dizziness','Rash','Joint Pain',
+  'Abdominal Pain','Back Pain','Frequent Urination','Excessive Thirst','Blurred Vision',
+  'Swelling','Heart Palpitations','Cold Hands & Feet','Weight Loss','Night Sweats','Chills',
+  'Loss of Smell','Loss of Taste','Muscle Weakness','Numbness','Skin Yellowing','Dark Urine',
+  'Blood in Urine','Blood in Stool','Constipation','Loss of Appetite','Anxiety','Insomnia'
+];
+
+const CONDITIONS = [
+  { name: '🤧 Common Cold / Flu', symptoms: ['Fever','Headache','Cough','Sore Throat','Runny Nose','Body Ache','Fatigue'], severity: 'low', action: 'Rest, fluids, paracetamol. See doctor if fever > 3 days.', specialist: 'General Physician' },
+  { name: '😷 COVID-19', symptoms: ['Fever','Cough','Fatigue','Loss of Smell','Loss of Taste','Shortness of Breath','Body Ache'], severity: 'med', action: 'Get tested. Isolate immediately. Consult doctor.', specialist: 'General Physician / Pulmonologist' },
+  { name: '🩸 Diabetes (Type 2)', symptoms: ['Excessive Thirst','Frequent Urination','Blurred Vision','Fatigue','Weight Loss'], severity: 'med', action: 'Get fasting blood sugar test. See doctor for HbA1c.', specialist: 'Diabetologist / Endocrinologist' },
+  { name: '❤️ Hypertension', symptoms: ['Headache','Dizziness','Chest Pain','Heart Palpitations','Blurred Vision'], severity: 'high', action: 'Check BP immediately. If > 180/120, go to ER.', specialist: 'Cardiologist' },
+  { name: '🫁 Pneumonia', symptoms: ['Fever','Cough','Shortness of Breath','Chest Pain','Chills','Fatigue'], severity: 'high', action: 'See doctor immediately. May need X-ray & antibiotics.', specialist: 'Pulmonologist' },
+  { name: '🦠 Typhoid', symptoms: ['Fever','Headache','Abdominal Pain','Nausea','Constipation','Fatigue','Loss of Appetite'], severity: 'med', action: 'Get Widal test. Antibiotics needed. Stay hydrated.', specialist: 'General Physician' },
+  { name: '🧠 Migraine', symptoms: ['Headache','Nausea','Vomiting','Blurred Vision','Dizziness'], severity: 'med', action: 'Rest in dark room. Prescribed migraine meds. Avoid triggers.', specialist: 'Neurologist' },
+  { name: '🩺 Dengue Fever', symptoms: ['Fever','Headache','Body Ache','Rash','Joint Pain','Fatigue','Nausea'], severity: 'high', action: 'Get platelet count immediately. Stay hydrated. No aspirin!', specialist: 'General Physician / Hematologist' },
+  { name: '⚖️ Thyroid (Hypothyroid)', symptoms: ['Fatigue','Weight Loss','Cold Hands & Feet','Constipation','Swelling','Insomnia'], severity: 'low', action: 'Get TSH, T3, T4 test. Treatable with medication.', specialist: 'Endocrinologist' },
+  { name: '🫀 Heart Attack', symptoms: ['Chest Pain','Shortness of Breath','Heart Palpitations','Dizziness','Swelling','Numbness'], severity: 'high', action: '🚨 EMERGENCY! Call 108 immediately. Chew aspirin if available.', specialist: 'EMERGENCY — Cardiologist' },
+];
+
+function filterSymptoms() {
+  const q = document.getElementById('symptom-search').value.toLowerCase();
+  const filtered = ALL_SYMPTOMS.filter(s => s.toLowerCase().includes(q) && !selectedSymptoms.has(s));
+  renderSymptomList(filtered);
+}
+
+function renderSymptomList(list) {
+  document.getElementById('symptom-list').innerHTML = list.slice(0, 20).map(s =>
+    `<span class="tag" onclick="addSymptom('${s}')">${s}</span>`).join('');
+}
+
+function addSymptom(s) {
+  selectedSymptoms.add(s);
+  updateSelectedDisplay();
+  filterSymptoms();
+}
+
+function removeSymptom(s) {
+  selectedSymptoms.delete(s);
+  updateSelectedDisplay();
+  filterSymptoms();
+}
+
+function updateSelectedDisplay() {
+  const el = document.getElementById('selected-symptoms');
+  if (!selectedSymptoms.size) { el.innerHTML = '<p class="muted text-sm">No symptoms added yet. Pick below.</p>'; return; }
+  el.innerHTML = [...selectedSymptoms].map(s => `<span class="symptom-chip" onclick="removeSymptom('${s}')">${s} <span class="x">✕</span></span>`).join('');
+}
+
+function checkSymptoms() {
+  if (!selectedSymptoms.size) return alert('Please add at least one symptom.');
+  const selected = [...selectedSymptoms];
+  const scored = CONDITIONS.map(c => {
+    const matches = c.symptoms.filter(s => selected.some(sel => sel.toLowerCase() === s.toLowerCase())).length;
+    const pct = Math.round((matches / c.symptoms.length) * 100);
+    return { ...c, matches, pct };
+  }).filter(c => c.pct > 0).sort((a, b) => b.pct - a.pct);
+
+  if (!scored.length) { document.getElementById('results-area').innerHTML = '<div class="card"><div class="alert alert-yellow">No matching conditions found. Try adding more specific symptoms.</div></div>'; return; }
+
+  document.getElementById('results-area').innerHTML = `
+    <div class="card">
+      <div class="card-title">📋 Possible Conditions (${scored.length} found)</div>
+      <div class="alert alert-blue mb-4">Results sorted by symptom match %. This is NOT a diagnosis.</div>
+      ${scored.slice(0, 5).map(c => {
+        const barColor = c.severity === 'high' ? 'var(--danger)' : c.severity === 'med' ? 'var(--warning)' : 'var(--success)';
+        const sevCls = c.severity === 'high' ? 'sev-high' : c.severity === 'med' ? 'sev-med' : 'sev-low';
+        const sevLabel = c.severity === 'high' ? '🔴 Urgent' : c.severity === 'med' ? '🟡 Moderate' : '🟢 Mild';
+        return `<div class="condition-card">
+          <div class="flex-between"><span class="fw-6">${c.name}</span><span class="severity-badge ${sevCls}">${sevLabel}</span></div>
+          <div class="match-bar"><div class="match-fill" style="width:${c.pct}%;background:${barColor}"></div></div>
+          <div class="flex-between text-xs muted mb-2"><span>${c.matches}/${c.symptoms.length} symptoms match</span><span>${c.pct}% match</span></div>
+          <div class="alert alert-blue" style="margin:8px 0">💊 ${c.action}</div>
+          <div class="muted text-xs">👨‍⚕️ See: <strong>${c.specialist}</strong></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+renderSymptomList(ALL_SYMPTOMS);
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ambulance Request | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.ambulance-btn{width:100%;padding:20px;background:var(--danger);color:white;border-radius:12px;font-size:20px;font-weight:800;border:none;cursor:pointer;animation:ambPulse 2s infinite;display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px}
+@keyframes ambPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}70%{box-shadow:0 0 0 20px rgba(239,68,68,0)}}
+.hospital-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:.2s}
+.hospital-card:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(14,165,233,.15)}
+.hospital-icon{width:48px;height:48px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.eta-badge{background:var(--success-light);color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.map-placeholder{background:linear-gradient(135deg,#e0f2fe,#dbeafe);border-radius:12px;height:200px;display:flex;align-items:center;justify-content:center;font-size:48px;border:1px solid var(--gray-200);margin-bottom:20px;position:relative}
+.map-pin{position:absolute;font-size:32px;animation:bounce .5s ease-in-out infinite alternate}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🚑 Live Ambulance Request</h1><p class="page-sub">Nearest ambulance contact & live tracking</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <button class="ambulance-btn" onclick="requestAmbulance()">🚨 REQUEST AMBULANCE NOW</button>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">📍 Your Location</div>
+          <div class="map-placeholder">
+            🗺️
+            <div class="map-pin" style="top:40%;left:50%">📍</div>
+          </div>
+          <div id="location-status" class="alert alert-blue">📍 Detecting your location...</div>
+          <button class="btn btn-primary w-full mt-3" onclick="getLocation()">🔄 Refresh Location</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📞 Emergency Numbers</div>
+          <div class="list-item"><span style="font-size:22px">🚑</span><div style="flex:1"><div class="fw-6">National Ambulance</div><div class="muted">108 (Free, 24/7)</div></div><a href="tel:108" class="btn btn-danger btn-sm">Call 108</a></div>
+          <div class="list-item"><span style="font-size:22px">👮</span><div style="flex:1"><div class="fw-6">Police</div><div class="muted">100</div></div><a href="tel:100" class="btn btn-outline btn-sm">Call</a></div>
+          <div class="list-item"><span style="font-size:22px">🔥</span><div style="flex:1"><div class="fw-6">Fire Brigade</div><div class="muted">101</div></div><a href="tel:101" class="btn btn-outline btn-sm">Call</a></div>
+          <div class="list-item"><span style="font-size:22px">🏥</span><div style="flex:1"><div class="fw-6">Disaster Management</div><div class="muted">1078</div></div><a href="tel:1078" class="btn btn-outline btn-sm">Call</a></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">🏥 Nearest Hospitals</div>
+          <div id="hospital-list">
+            <div class="hospital-card">
+              <div class="hospital-icon">🏥</div>
+              <div style="flex:1">
+                <div class="fw-6">AIIMS Delhi</div>
+                <div class="muted">Emergency · 24/7 · 2.3 km</div>
+                <div class="muted text-xs">Ansari Nagar, New Delhi</div>
+              </div>
+              <div style="text-align:right">
+                <div class="eta-badge">ETA ~8 min</div>
+                <div style="margin-top:6px;display:flex;gap:6px">
+                  <a href="tel:011-26588500" class="btn btn-sm btn-danger">📞</a>
+                  <button class="btn btn-sm btn-primary" onclick="requestFrom('AIIMS Delhi')">🚑</button>
+                </div>
+              </div>
+            </div>
+            <div class="hospital-card">
+              <div class="hospital-icon">🏥</div>
+              <div style="flex:1">
+                <div class="fw-6">Safdarjung Hospital</div>
+                <div class="muted">Emergency · 24/7 · 3.1 km</div>
+                <div class="muted text-xs">Ring Road, New Delhi</div>
+              </div>
+              <div style="text-align:right">
+                <div class="eta-badge">ETA ~11 min</div>
+                <div style="margin-top:6px;display:flex;gap:6px">
+                  <a href="tel:011-26707444" class="btn btn-sm btn-danger">📞</a>
+                  <button class="btn btn-sm btn-primary" onclick="requestFrom('Safdarjung Hospital')">🚑</button>
+                </div>
+              </div>
+            </div>
+            <div class="hospital-card">
+              <div class="hospital-icon">🏥</div>
+              <div style="flex:1">
+                <div class="fw-6">Max Hospital Saket</div>
+                <div class="muted">Private · 24/7 · 4.8 km</div>
+                <div class="muted text-xs">Press Enclave Road, Saket</div>
+              </div>
+              <div style="text-align:right">
+                <div class="eta-badge">ETA ~15 min</div>
+                <div style="margin-top:6px;display:flex;gap:6px">
+                  <a href="tel:011-26515050" class="btn btn-sm btn-danger">📞</a>
+                  <button class="btn btn-sm btn-primary" onclick="requestFrom('Max Hospital Saket')">🚑</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ambulance');
+
+function getLocation() {
+  if (!navigator.geolocation) { document.getElementById('location-status').textContent = '❌ Geolocation not supported'; return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
+    document.getElementById('location-status').className = 'alert alert-green';
+    document.getElementById('location-status').textContent = `✅ Location detected: ${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`;
+  }, () => {
+    document.getElementById('location-status').className = 'alert alert-yellow';
+    document.getElementById('location-status').textContent = '⚠️ Location access denied. Using approximate location.';
+  });
+}
+
+function requestAmbulance() {
+  if (confirm('🚨 REQUEST AMBULANCE\n\nThis will:\n• Share your GPS location\n• Contact nearest 108 ambulance\n• Notify emergency contacts\n\nProceed?')) {
+    alert('✅ AMBULANCE REQUESTED!\n\n🚑 AIIMS Delhi Ambulance dispatched\n📍 Your location shared\n⏱ ETA: ~8 minutes\n📞 Driver will call: +91 98765 00001\n\n108 helpline also notified.');
+    saveData('ambulance_requests', { hospital: 'AIIMS Delhi', status: 'Dispatched', eta: '8 min' });
+  }
+}
+
+function requestFrom(hospital) {
+  if (confirm(`Request ambulance from ${hospital}?`)) {
+    alert(`✅ Ambulance requested from ${hospital}!\n\nHelp is on the way. Stay calm.`);
+    saveData('ambulance_requests', { hospital, status: 'Requested' });
+  }
+}
+
+getLocation();
+</script>
+</body>
+</html>

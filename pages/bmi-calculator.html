@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BMI Calculator | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.bmi-gauge{position:relative;width:240px;margin:0 auto 20px}
+.bmi-gauge svg{width:100%}
+.bmi-val-overlay{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);text-align:center}
+.bmi-num{font-size:42px;font-weight:800}
+.bmi-cat{font-size:13px;font-weight:600;padding:3px 12px;border-radius:20px}
+.advice-box{padding:16px;border-radius:10px;margin-top:16px}
+.bmi-scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+.bmi-range{padding:14px 8px;border-radius:8px;font-size:11px;font-weight:600;text-align:center}
+.bmi-range.blue{background:#dbeafe;color:#1e40af}
+.bmi-range.green{background:var(--success-light);color:#166534}
+.bmi-range.yellow{background:var(--warning-light);color:#92400e}
+.bmi-range.orange{background:#fed7aa;color:#9a3412}
+.bmi-range.red{background:var(--danger-light);color:#991b1b}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">⚖️ BMI & Fitness Calculator</h1><p class="page-sub">Height & weight based health analysis</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Calculate Your BMI</div>
+        <div class="form-row">
+          <div class="form-group"><label>Height (cm)</label><input type="number" id="height" placeholder="e.g. 170" class="input"></div>
+          <div class="form-group"><label>Weight (kg)</label><input type="number" id="weight" placeholder="e.g. 70" class="input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Age</label><input type="number" id="age" placeholder="e.g. 25" class="input"></div>
+          <div class="form-group"><label>Gender</label>
+            <select id="gender" class="input"><option value="male">Male</option><option value="female">Female</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label>Activity Level</label>
+          <select id="activity" class="input">
+            <option value="1.2">Sedentary (desk job, no exercise)</option>
+            <option value="1.375">Light (exercise 1–3 days/week)</option>
+            <option value="1.55">Moderate (exercise 3–5 days/week)</option>
+            <option value="1.725">Active (exercise 6–7 days/week)</option>
+            <option value="1.9">Very Active (physical job + gym)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w-full" onclick="calcBMI()">🔢 Calculate BMI & Stats</button>
+
+        <div id="bmi-result" class="hidden" style="margin-top:20px">
+          <div class="bmi-gauge">
+            <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 110 A90 90 0 0 1 180 110" stroke="#e2e8f0" stroke-width="16" stroke-linecap="round"/>
+              <path d="M20 110 A90 90 0 0 1 72 28" stroke="#3b82f6" stroke-width="16" stroke-linecap="round"/>
+              <path d="M72 28 A90 90 0 0 1 128 28" stroke="#22c55e" stroke-width="16" stroke-linecap="round"/>
+              <path d="M128 28 A90 90 0 0 1 162 55" stroke="#f59e0b" stroke-width="16" stroke-linecap="round"/>
+              <path d="M162 55 A90 90 0 0 1 180 110" stroke="#ef4444" stroke-width="16" stroke-linecap="round"/>
+              <line id="bmi-needle" x1="100" y1="110" x2="100" y2="30" stroke="#1e293b" stroke-width="3" stroke-linecap="round" style="transform-origin:100px 110px;transform:rotate(0deg);transition:transform 0.8s ease"/>
+              <circle cx="100" cy="110" r="6" fill="#1e293b"/>
+            </svg>
+            <div class="bmi-val-overlay">
+              <div class="bmi-num" id="bmi-number">–</div>
+              <span class="bmi-cat" id="bmi-cat-badge">–</span>
+            </div>
+          </div>
+
+          <div id="bmi-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+            <div class="stat-card"><div class="stat-lbl">Ideal Weight Range</div><div class="stat-val" style="font-size:18px" id="ideal-weight">–</div></div>
+            <div class="stat-card"><div class="stat-lbl">Daily Calorie Need (TDEE)</div><div class="stat-val" style="font-size:18px" id="tdee">–</div></div>
+            <div class="stat-card"><div class="stat-lbl">BMR (Base Metabolism)</div><div class="stat-val" style="font-size:18px" id="bmr">–</div></div>
+            <div class="stat-card"><div class="stat-lbl">Body Fat % (Est.)</div><div class="stat-val" style="font-size:18px" id="body-fat">–</div></div>
+          </div>
+          <div id="bmi-advice" class="advice-box"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">BMI Scale Reference</div>
+          <div class="bmi-scale">
+            <div class="bmi-range blue">Underweight<br><small>&lt; 18.5</small></div>
+            <div class="bmi-range green">Normal<br><small>18.5–24.9</small></div>
+            <div class="bmi-range yellow">Overweight<br><small>25–29.9</small></div>
+            <div class="bmi-range orange">Obese I<br><small>30–34.9</small></div>
+            <div class="bmi-range red">Obese II+<br><small>35+</small></div>
+          </div>
+        </div>
+        <div class="card mt-4">
+          <div class="card-title">BMI History</div>
+          <div class="bar-chart" id="bmi-history-chart"></div>
+          <div class="divider"></div>
+          <div id="bmi-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('bmi');
+
+function calcBMI() {
+  const h = parseFloat(document.getElementById('height').value);
+  const w = parseFloat(document.getElementById('weight').value);
+  const age = parseInt(document.getElementById('age').value) || 25;
+  const gender = document.getElementById('gender').value;
+  const activity = parseFloat(document.getElementById('activity').value);
+  if (!h || !w) return alert('Please enter height and weight.');
+  const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+  let cat, color, advice, badgeCls;
+  if (bmi < 18.5) { cat = 'Underweight'; color = '#3b82f6'; badgeCls = 'badge blue'; advice = '⚡ You are underweight. Focus on nutrient-rich foods, protein, and healthy fats. Consult a nutritionist.'; }
+  else if (bmi < 25) { cat = 'Normal Weight'; color = '#22c55e'; badgeCls = 'badge green'; advice = '✅ Great! You are at a healthy weight. Maintain your current diet and exercise routine.'; }
+  else if (bmi < 30) { cat = 'Overweight'; color = '#f59e0b'; badgeCls = 'badge yellow'; advice = '⚠️ Slightly overweight. Consider reducing calorie intake and increasing physical activity.'; }
+  else if (bmi < 35) { cat = 'Obese Class I'; color = '#f97316'; badgeCls = 'badge yellow'; advice = '🚨 Obese Class I. Please consult a doctor. Focus on diet, exercise, and lifestyle changes.'; }
+  else { cat = 'Obese Class II+'; color = '#ef4444'; badgeCls = 'badge red'; advice = '🆘 Obese Class II+. Medical supervision strongly recommended. Please see a doctor immediately.'; }
+
+  // BMR (Mifflin-St Jeor)
+  const bmr = gender === 'male'
+    ? Math.round(10 * w + 6.25 * h - 5 * age + 5)
+    : Math.round(10 * w + 6.25 * h - 5 * age - 161);
+  const tdee = Math.round(bmr * activity);
+  const idealMin = (18.5 * (h / 100) ** 2).toFixed(1);
+  const idealMax = (24.9 * (h / 100) ** 2).toFixed(1);
+  const bodyFat = gender === 'male'
+    ? (1.20 * parseFloat(bmi) + 0.23 * age - 16.2).toFixed(1)
+    : (1.20 * parseFloat(bmi) + 0.23 * age - 5.4).toFixed(1);
+
+  // Needle angle: BMI 15=−90°, 18.5=−54°, 25=0°, 30=45°, 40=90°
+  const angle = Math.min(Math.max(((parseFloat(bmi) - 15) / 25) * 180 - 90, -90), 90);
+
+  document.getElementById('bmi-result').classList.remove('hidden');
+  document.getElementById('bmi-number').textContent = bmi;
+  document.getElementById('bmi-number').style.color = color;
+  document.getElementById('bmi-cat-badge').textContent = cat;
+  document.getElementById('bmi-cat-badge').className = badgeCls;
+  document.getElementById('bmi-needle').style.transform = `rotate(${angle}deg)`;
+  document.getElementById('ideal-weight').textContent = `${idealMin}–${idealMax} kg`;
+  document.getElementById('tdee').textContent = `${tdee} kcal`;
+  document.getElementById('bmr').textContent = `${bmr} kcal`;
+  document.getElementById('body-fat').textContent = `${bodyFat}%`;
+  const adv = document.getElementById('bmi-advice');
+  adv.style.background = color + '20';
+  adv.style.borderLeft = `4px solid ${color}`;
+  adv.textContent = advice;
+
+  saveData('bmi_logs', { bmi: parseFloat(bmi), cat, weight: w, height: h });
+  updateHistory();
+}
+
+function updateHistory() {
+  const data = loadData('bmi_logs');
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('bmi-history-chart', recent.map(d => d.bmi), recent.map((_, i) => `#${i + 1}`), '#0ea5e9');
+  renderLog('bmi-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:22px">⚖️</span>
+      <div style="flex:1"><div class="fw-6">BMI: ${d.bmi} · ${d.weight}kg / ${d.height}cm</div><div class="muted">${d.time}</div></div>
+      <span class="badge ${d.bmi < 18.5 ? 'blue' : d.bmi < 25 ? 'green' : d.bmi < 30 ? 'yellow' : 'red'}">${d.cat}</span>
+    </div>`);
+}
+updateHistory();
+</script>
+</body>
+</html>

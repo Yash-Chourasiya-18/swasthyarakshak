@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Workout | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.workout-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;transition:.2s}
+.workout-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.ex-icon{font-size:36px;flex-shrink:0}
+.ex-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.ex-tag{background:var(--gray-100);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;color:var(--gray-600)}
+.ex-tag.blue{background:var(--primary-light);color:var(--primary-dark)}
+.timer-ring{width:120px;height:120px;border-radius:50%;border:8px solid var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;font-weight:800;color:var(--primary)}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">💪 AI Workout Suggestions</h1><p class="page-sub">Health condition ke basis par exercise plan</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚙️ Your Fitness Profile</div>
+        <div class="form-group"><label>Fitness Goal</label>
+          <select id="w-goal" class="input">
+            <option value="lose_weight">🔥 Lose Weight</option>
+            <option value="gain_muscle">💪 Gain Muscle & Strength</option>
+            <option value="cardio">❤️ Improve Cardiovascular Health</option>
+            <option value="flexibility">🧘 Flexibility & Stress Relief</option>
+            <option value="diabetes">🩸 Diabetic-Friendly Exercise</option>
+            <option value="elderly">🧓 Senior / Low Impact</option>
+            <option value="postnatal">🤱 Post-Natal Recovery</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Current Fitness Level</label>
+          <select id="w-level" class="input">
+            <option value="beginner">Beginner (never exercised / just starting)</option>
+            <option value="intermediate">Intermediate (exercise 2–3x/week)</option>
+            <option value="advanced">Advanced (exercise 5+ days/week)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Age</label><input type="number" id="w-age" placeholder="30" class="input"></div>
+          <div class="form-group"><label>Available Time/Day</label>
+            <select id="w-time" class="input"><option>15 min</option><option>30 min</option><option value="45" selected>45 min</option><option>60 min</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label>Health Conditions / Avoid</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">🦴 Knee Pain</span>
+            <span class="tag" onclick="toggleTag(this)">🔙 Back Pain</span>
+            <span class="tag" onclick="toggleTag(this)">❤️ Heart Condition</span>
+            <span class="tag" onclick="toggleTag(this)">🩸 Diabetes</span>
+            <span class="tag" onclick="toggleTag(this)">🤰 Pregnant</span>
+            <span class="tag" onclick="toggleTag(this)">🦾 Shoulder Injury</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Equipment Available</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">🏠 No Equipment</span>
+            <span class="tag" onclick="toggleTag(this)">🏋️ Dumbbells</span>
+            <span class="tag" onclick="toggleTag(this)">🏋️ Full Gym</span>
+            <span class="tag" onclick="toggleTag(this)">🧘 Yoga Mat</span>
+            <span class="tag" onclick="toggleTag(this)">🚴 Cycle/Treadmill</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="generateWorkout()">💪 Generate My Workout Plan</button>
+      </div>
+
+      <div id="workout-plan-area">
+        <div class="card" style="text-align:center;padding:40px">
+          <div style="font-size:56px;margin-bottom:12px">💪</div>
+          <p class="fw-6">Fill your profile to get a personalized workout plan!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ai-workout');
+
+const WORKOUTS = {
+  lose_weight_beginner: [
+    { icon: '🚶', name: 'Brisk Walking', sets: '1 session', reps: '30 min', rest: '–', muscle: 'Full Body', cal: 150 },
+    { icon: '🏃', name: 'Jogging (slow pace)', sets: '3 intervals', reps: '5 min each', rest: '2 min', muscle: 'Cardio', cal: 180 },
+    { icon: '🧘', name: 'Sun Salutation (Surya Namaskar)', sets: '2 rounds', reps: '12 poses', rest: '1 min', muscle: 'Full Body', cal: 80 },
+    { icon: '💪', name: 'Bodyweight Squats', sets: '3', reps: '15', rest: '60s', muscle: 'Legs & Glutes', cal: 50 },
+    { icon: '🤸', name: 'Modified Push-ups (knees)', sets: '3', reps: '10', rest: '60s', muscle: 'Chest & Arms', cal: 40 },
+  ],
+  elderly_beginner: [
+    { icon: '🪑', name: 'Chair Squats', sets: '3', reps: '10', rest: '90s', muscle: 'Legs', cal: 30 },
+    { icon: '🚶', name: 'Slow Walk', sets: '1', reps: '20 min', rest: '–', muscle: 'Full Body', cal: 80 },
+    { icon: '🧘', name: 'Gentle Stretching', sets: '1', reps: '10 min', rest: '–', muscle: 'Flexibility', cal: 25 },
+    { icon: '💪', name: 'Wall Push-ups', sets: '2', reps: '10', rest: '60s', muscle: 'Upper Body', cal: 25 },
+    { icon: '🦵', name: 'Leg Raises (sitting)', sets: '3', reps: '10 each leg', rest: '60s', muscle: 'Core & Legs', cal: 20 },
+  ],
+  diabetes_intermediate: [
+    { icon: '🚴', name: 'Stationary Cycling', sets: '1', reps: '20 min', rest: '–', muscle: 'Cardio', cal: 160 },
+    { icon: '💪', name: 'Dumbbell Bicep Curls', sets: '3', reps: '12', rest: '60s', muscle: 'Arms', cal: 40 },
+    { icon: '🏋️', name: 'Goblet Squat', sets: '3', reps: '12', rest: '90s', muscle: 'Legs', cal: 60 },
+    { icon: '🤸', name: 'Push-ups', sets: '3', reps: '15', rest: '60s', muscle: 'Chest', cal: 50 },
+    { icon: '🧘', name: 'Yoga Breathing (Pranayama)', sets: '1', reps: '10 min', rest: '–', muscle: 'Relaxation', cal: 20 },
+  ],
+  gain_muscle_intermediate: [
+    { icon: '🏋️', name: 'Barbell Squat', sets: '4', reps: '8–10', rest: '2 min', muscle: 'Legs & Core', cal: 80 },
+    { icon: '🤸', name: 'Bench Press', sets: '4', reps: '8', rest: '2 min', muscle: 'Chest', cal: 70 },
+    { icon: '💪', name: 'Deadlift', sets: '3', reps: '6–8', rest: '3 min', muscle: 'Back & Glutes', cal: 90 },
+    { icon: '🏋️', name: 'Pull-ups / Lat Pulldown', sets: '3', reps: '10', rest: '90s', muscle: 'Back & Biceps', cal: 60 },
+    { icon: '💪', name: 'Overhead Press', sets: '3', reps: '10', rest: '90s', muscle: 'Shoulders', cal: 50 },
+  ]
+};
+
+function generateWorkout() {
+  const goal = document.getElementById('w-goal').value;
+  const level = document.getElementById('w-level').value;
+  const time = document.getElementById('w-time').value;
+  const key = `${goal}_${level}`;
+  const exercises = WORKOUTS[key] || WORKOUTS.lose_weight_beginner;
+  const totalCal = exercises.reduce((a, e) => a + e.cal, 0);
+  const goalLabels = { lose_weight: '🔥 Weight Loss', gain_muscle: '💪 Muscle Building', cardio: '❤️ Cardio', elderly: '🧓 Senior Fitness', diabetes: '🩸 Diabetes-Friendly', flexibility: '🧘 Flexibility' };
+
+  document.getElementById('workout-plan-area').innerHTML = `
+    <div class="card mb-4">
+      <div class="card-title">📊 Today's Workout Overview</div>
+      <div class="stats-row" style="margin-bottom:0">
+        <div class="stat-card green"><div class="stat-icon">🔥</div><div class="stat-val">${totalCal}</div><div class="stat-lbl">Est. Calories</div></div>
+        <div class="stat-card blue"><div class="stat-icon">⏱️</div><div class="stat-val">${time} min</div><div class="stat-lbl">Duration</div></div>
+        <div class="stat-card purple"><div class="stat-icon">💪</div><div class="stat-val">${exercises.length}</div><div class="stat-lbl">Exercises</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💪 Exercise Plan — ${goalLabels[goal] || goal}</div>
+      <div class="alert alert-blue mb-4">⚠️ Always warm up 5 min before and cool down 5 min after. Stay hydrated!</div>
+      ${exercises.map((e, i) => `
+        <div class="workout-card">
+          <div class="ex-icon">${e.icon}</div>
+          <div style="flex:1">
+            <div class="flex-between"><span class="fw-6">${i+1}. ${e.name}</span><span class="badge green">🔥 ${e.cal} cal</span></div>
+            <div class="ex-meta">
+              <span class="ex-tag">📋 ${e.sets} sets</span>
+              <span class="ex-tag">🔁 ${e.reps}</span>
+              <span class="ex-tag">⏸️ Rest: ${e.rest}</span>
+              <span class="ex-tag blue">🎯 ${e.muscle}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+</script>
+</body>
+</html>

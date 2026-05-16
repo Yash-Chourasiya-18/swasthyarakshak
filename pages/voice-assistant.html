@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voice Assistant | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.va-circle{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 20px;cursor:pointer;font-size:48px;transition:.3s;box-shadow:0 8px 32px rgba(14,165,233,.3)}
+.va-circle.active{animation:vaPulse 1s infinite;box-shadow:0 0 0 0 rgba(14,165,233,.4)}
+@keyframes vaPulse{0%{box-shadow:0 0 0 0 rgba(14,165,233,.6)}70%{box-shadow:0 0 0 25px rgba(14,165,233,0)}100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}}
+.chat-bubble{max-width:80%;padding:12px 16px;border-radius:12px;margin-bottom:10px;font-size:14px;line-height:1.5}
+.chat-user{background:var(--primary);color:white;margin-left:auto;border-radius:12px 12px 4px 12px}
+.chat-ai{background:white;border:1px solid var(--gray-200);color:var(--gray-800);border-radius:12px 12px 12px 4px}
+.chat-container{max-height:320px;overflow-y:auto;padding:4px}
+.suggestion-btn{background:var(--primary-light);color:var(--primary-dark);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:.2s;margin:4px}
+.suggestion-btn:hover{background:var(--primary);color:white}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🎙️ Voice Health Assistant</h1><p class="page-sub">Hindi + English voice interaction</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card" style="text-align:center">
+        <div class="card-title" style="text-align:left">Voice Assistant</div>
+        <div class="va-circle" id="va-circle" onclick="toggleVoice()">🎙️</div>
+        <p style="font-weight:700;font-size:16px" id="va-status">Tap to speak</p>
+        <p class="muted text-sm mt-1 mb-4">Speak in Hindi or English</p>
+        <div class="divider"></div>
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px">Try saying:</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px">
+          <button class="suggestion-btn" onclick="processQuery('Mera BP kitna hai')">मेरा BP क्या है?</button>
+          <button class="suggestion-btn" onclick="processQuery('What is my blood sugar')">My blood sugar?</button>
+          <button class="suggestion-btn" onclick="processQuery('Aaj kitna paani piya')">आज कितना पानी पिया?</button>
+          <button class="suggestion-btn" onclick="processQuery('Emergency contact call karo')">Emergency call karo</button>
+          <button class="suggestion-btn" onclick="processQuery('Mera BMI batao')">मेरा BMI batao</button>
+          <button class="suggestion-btn" onclick="processQuery('Sleep log karo 7 hours')">Sleep log karo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💬 Conversation</div>
+        <div class="chat-container" id="chat-box">
+          <div class="chat-bubble chat-ai">🙏 Namaste! Main aapka SwasthyaRakshak+ health assistant hoon. Aap mujhse Hindi ya English mein baat kar sakte hain.<br><br>Try saying: "Mera BP kitna hai" or "What is my health summary?"</div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="text-input" class="input" placeholder="Type your question..." style="flex:1" onkeypress="if(event.key==='Enter')sendText()">
+          <button class="btn btn-primary" onclick="sendText()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('voice-assistant');
+let recognition = null, voiceActive = false;
+
+const RESPONSES = {
+  bp: () => { const d = loadData('bp_readings')[0]; return d ? `Aapka last BP reading tha: ${d.sys}/${d.dia} mmHg — Status: ${d.status}` : 'Koi BP reading nahi mili. Pehle BP track karein.'; },
+  sugar: () => { const d = loadData('sugar_readings')[0]; return d ? `Aapki last blood sugar: ${d.val} mg/dL — ${d.status}` : 'Koi sugar reading nahi mili.'; },
+  sleep: () => { const d = loadData('sleep_logs')[0]; return d ? `Last raat aapne ${d.hours} ghante soye. Quality: ${d.quality}` : 'Sleep log nahi mila. Sleep monitor use karein.'; },
+  water: () => { const g = localStorage.getItem('water_today_' + new Date().toDateString()) || '0'; return `Aaj aapne ${g} glass paani piya hai.`; },
+  bmi: () => { const d = loadData('bmi_logs')[0]; return d ? `Aapka BMI ${d.bmi} hai — Category: ${d.cat}` : 'BMI nahi mila. BMI calculator use karein.'; },
+  steps: () => { const d = loadData('activities'); const today = d.filter(x => new Date(x.time).toDateString() === new Date().toDateString()); const s = today.reduce((a,x)=>a+(x.steps||0),0); return `Aaj aapne ${s.toLocaleString()} steps liye.`; },
+  emergency: () => 'Emergency contacts ko call kar raha hoon. 108 pe bhi call karein! 🆘',
+  hello: () => 'Namaste! Main SwasthyaRakshak+ assistant hoon. Aap mujhse apni health ke baare mein kuch bhi poochh sakte hain! 😊',
+  summary: () => {
+    const bp = loadData('bp_readings')[0];
+    const sugar = loadData('sugar_readings')[0];
+    const sleep = loadData('sleep_logs')[0];
+    return `📊 Health Summary:\n❤️ BP: ${bp ? bp.sys+'/'+bp.dia : '–'}\n🩸 Sugar: ${sugar ? sugar.val+'mg/dL' : '–'}\n😴 Sleep: ${sleep ? sleep.hours+'h' : '–'}\n💧 Water: ${localStorage.getItem('water_today_'+new Date().toDateString())||'0'} glasses`;
+  },
+  default: (q) => `Samajh aaya: "${q}". Abhi yeh feature add ho raha hai. Baaki features ke liye dashboard dekho! 😊`
+};
+
+function getResponse(query) {
+  const q = query.toLowerCase();
+  if (q.includes('bp') || q.includes('blood pressure')) return RESPONSES.bp();
+  if (q.includes('sugar') || q.includes('glucose') || q.includes('diabetes')) return RESPONSES.sugar();
+  if (q.includes('sleep') || q.includes('soya') || q.includes('ghante soye')) return RESPONSES.sleep();
+  if (q.includes('paani') || q.includes('water')) return RESPONSES.water();
+  if (q.includes('bmi')) return RESPONSES.bmi();
+  if (q.includes('steps') || q.includes('walk') || q.includes('chala')) return RESPONSES.steps();
+  if (q.includes('emergency') || q.includes('help') || q.includes('sos')) return RESPONSES.emergency();
+  if (q.includes('hello') || q.includes('hi') || q.includes('namaste')) return RESPONSES.hello();
+  if (q.includes('summary') || q.includes('report') || q.includes('sara')) return RESPONSES.summary();
+  return RESPONSES.default(query);
+}
+
+function addChat(text, isUser) {
+  const box = document.getElementById('chat-box');
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${isUser ? 'chat-user' : 'chat-ai'}`;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function processQuery(q) {
+  addChat(q, true);
+  setTimeout(() => { addChat(getResponse(q), false); speak(getResponse(q)); }, 400);
+}
+
+function sendText() {
+  const input = document.getElementById('text-input');
+  if (!input.value.trim()) return;
+  processQuery(input.value);
+  input.value = '';
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'hi-IN'; utt.rate = 0.9;
+  window.speechSynthesis.speak(utt);
+}
+
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { alert('Voice not supported. Please use Chrome and type your question below.'); return; }
+  if (voiceActive) { recognition?.stop(); voiceActive = false; document.getElementById('va-circle').classList.remove('active'); document.getElementById('va-status').textContent = 'Tap to speak'; return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR(); recognition.lang = 'hi-IN'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.onstart = () => { voiceActive = true; document.getElementById('va-circle').classList.add('active'); document.getElementById('va-status').textContent = '🔴 Listening...'; };
+  recognition.onresult = (e) => { const t = e.results[0][0].transcript; processQuery(t); };
+  recognition.onend = () => { voiceActive = false; document.getElementById('va-circle').classList.remove('active'); document.getElementById('va-status').textContent = 'Tap to speak'; };
+  recognition.start();
+}
+</script>
+</body>
+</html>

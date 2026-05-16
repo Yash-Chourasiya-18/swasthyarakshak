@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blood Donor Network | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.blood-type-btn{width:64px;height:64px;border-radius:10px;border:2px solid var(--gray-200);background:white;font-size:16px;font-weight:800;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center}
+.blood-type-btn.selected{background:var(--danger);color:white;border-color:var(--danger)}
+.donor-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:16px;display:flex;gap:14px;align-items:center;margin-bottom:10px;transition:.2s}
+.donor-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.donor-avatar{width:48px;height:48px;border-radius:50%;background:var(--danger-light);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--danger);font-size:16px;flex-shrink:0}
+.distance-tag{background:var(--primary-light);color:var(--primary-dark);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.sos-request-btn{width:100%;padding:20px;background:var(--danger);color:white;border-radius:12px;font-size:18px;font-weight:800;border:none;cursor:pointer;animation:sosPulse 2s infinite}
+@keyframes sosPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}70%{box-shadow:0 0 0 20px rgba(239,68,68,0)}}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🩸 Community Blood Donor Network</h1><p class="page-sub">Emergency blood donor finder</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">🔍 Find Blood Donor</div>
+          <div class="form-group"><label>Required Blood Group</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" id="blood-selector">
+              <button class="blood-type-btn" onclick="selectBlood(this,'A+')">A+</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'A-')">A-</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'B+')">B+</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'B-')">B-</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'O+')">O+</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'O-')">O-</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'AB+')">AB+</button>
+              <button class="blood-type-btn" onclick="selectBlood(this,'AB-')">AB-</button>
+            </div>
+          </div>
+          <div class="form-group"><label>Location / City</label><input type="text" id="donor-city" placeholder="e.g. New Delhi, Noida" class="input"></div>
+          <div class="form-group"><label>Search Radius</label>
+            <select class="input"><option>5 km</option><option>10 km</option><option>25 km</option><option>50 km</option></select>
+          </div>
+          <div class="form-group"><label>Urgency</label>
+            <select id="urgency" class="input"><option>Normal (within 24h)</option><option>Urgent (within 6h)</option><option>Emergency (right now)</option></select>
+          </div>
+          <button class="btn btn-primary w-full" onclick="findDonors()">🔍 Find Donors</button>
+          <div class="divider"></div>
+          <button class="sos-request-btn" onclick="sendBloodSOS()">🆘 EMERGENCY — Send Blood Request to All Donors</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">👤 Register as Donor</div>
+          <div class="alert alert-blue mb-4">❤️ Be a hero! Register once and save lives. You'll be notified only when your blood group is needed nearby.</div>
+          <div class="form-row">
+            <div class="form-group"><label>Your Name</label><input type="text" id="reg-name" placeholder="Full name" class="input"></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="reg-phone" placeholder="+91 XXXXX XXXXX" class="input"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Blood Group</label>
+              <select id="reg-blood" class="input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+            </div>
+            <div class="form-group"><label>City</label><input type="text" id="reg-city" placeholder="Your city" class="input"></div>
+          </div>
+          <div class="form-group"><label>Last Donation</label><input type="date" id="reg-last" class="input"></div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" checked> Available for emergency requests</label>
+          </div>
+          <button class="btn btn-danger w-full" onclick="registerDonor()">🩸 Register as Donor</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="donors-list-card">
+      <div class="card-title">🩸 Available Donors Near You</div>
+      <div id="donors-list">
+        <p class="muted text-sm" style="padding:8px 0">Search for a blood group to see available donors.</p>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-title">🏥 Nearby Blood Banks</div>
+      <div>
+        <div class="donor-card">
+          <div class="donor-avatar" style="background:var(--primary-light);color:var(--primary);font-size:20px">🏥</div>
+          <div style="flex:1"><div class="fw-6">AIIMS Blood Bank</div><div class="muted">Ansari Nagar · 24/7 · All blood groups</div></div>
+          <div style="text-align:right"><span class="distance-tag">2.3 km</span><div style="margin-top:6px"><a href="tel:011-26588500" class="btn btn-sm btn-danger">📞 Call</a></div></div>
+        </div>
+        <div class="donor-card">
+          <div class="donor-avatar" style="background:var(--primary-light);color:var(--primary);font-size:20px">🏥</div>
+          <div style="flex:1"><div class="fw-6">Red Cross Blood Bank, Delhi</div><div class="muted">Connaught Place · 8AM–8PM</div></div>
+          <div style="text-align:right"><span class="distance-tag">5.1 km</span><div style="margin-top:6px"><a href="tel:011-23359379" class="btn btn-sm btn-danger">📞 Call</a></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('blood-donor');
+let selectedBlood = '';
+
+function selectBlood(btn, type) {
+  document.querySelectorAll('.blood-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); selectedBlood = type;
+}
+
+const SAMPLE_DONORS = [
+  { name: 'Arjun S.', blood: 'B+', city: 'Noida, Sec-15', dist: '1.2 km', lastDon: '3 months ago', phone: '+91 98765 XXXXX', avail: true },
+  { name: 'Rekha M.', blood: 'B+', city: 'Greater Noida', dist: '3.8 km', lastDon: '6 months ago', phone: '+91 87654 XXXXX', avail: true },
+  { name: 'Vikas T.', blood: 'O+', city: 'Delhi, Dwarka', dist: '8.2 km', lastDon: '4 months ago', phone: '+91 76543 XXXXX', avail: true },
+  { name: 'Nisha K.', blood: 'A+', city: 'Ghaziabad', dist: '5.6 km', lastDon: '2 months ago', phone: '+91 65432 XXXXX', avail: true },
+  { name: 'Rohit P.', blood: 'AB+', city: 'Faridabad', dist: '12 km', lastDon: '8 months ago', phone: '+91 54321 XXXXX', avail: false },
+];
+
+function findDonors() {
+  if (!selectedBlood) return alert('Please select a blood group first.');
+  const filtered = SAMPLE_DONORS.filter(d => d.blood === selectedBlood);
+  const el = document.getElementById('donors-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="alert alert-yellow">No donors found for ${selectedBlood} in your area. Try expanding search radius or sending emergency request.</div>`;
+    return;
+  }
+  el.innerHTML = `<p class="muted text-sm mb-3">${filtered.length} donor(s) found for blood group <strong>${selectedBlood}</strong></p>` +
+    filtered.map(d => `
+      <div class="donor-card">
+        <div class="donor-avatar">${d.blood}</div>
+        <div style="flex:1">
+          <div class="fw-6">${d.name} <span class="badge ${d.avail ? 'green' : 'yellow'}">${d.avail ? 'Available' : 'Check'}</span></div>
+          <div class="muted text-sm">📍 ${d.city} · Last donation: ${d.lastDon}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="distance-tag">📍 ${d.dist}</span>
+          <div style="margin-top:6px"><button class="btn btn-sm btn-danger" onclick="contactDonor('${d.name}','${d.phone}')">📞 Contact</button></div>
+        </div>
+      </div>`).join('');
+}
+
+function contactDonor(name, phone) {
+  if (confirm(`Contact ${name} for blood donation?\n\nPhone: ${phone}`)) {
+    alert(`✅ Request sent to ${name}!\nThey will call you within 30 minutes.`);
+  }
+}
+
+function registerDonor() {
+  const name = document.getElementById('reg-name').value;
+  const phone = document.getElementById('reg-phone').value;
+  const blood = document.getElementById('reg-blood').value;
+  if (!name || !phone) return alert('Please fill name and phone.');
+  localStorage.setItem('donor_registration', JSON.stringify({ name, phone, blood }));
+  alert(`🩸 Thank you ${name}!\n\nYou're registered as a ${blood} donor.\nYou'll be notified when someone nearby needs your blood.\n\n❤️ You're a lifesaver!`);
+}
+
+function sendBloodSOS() {
+  if (!selectedBlood) return alert('Please select a blood group first.');
+  if (confirm(`🆘 Send emergency ${selectedBlood} blood request to ALL nearby donors?`)) {
+    alert(`🆘 Emergency blood request sent!\n\nBlood Group: ${selectedBlood}\nNotified: 12 donors in 10km radius\nExpected response: within 30 minutes\n\nYou will receive calls from available donors.`);
+  }
+}
+</script>
+</body>
+</html>

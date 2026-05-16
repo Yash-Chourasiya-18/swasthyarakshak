@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Challenges | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.challenge-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px;margin-bottom:12px;transition:.2s;cursor:pointer}
+.challenge-card:hover,.challenge-card.active{border-color:var(--primary);box-shadow:0 4px 16px rgba(14,165,233,.15)}
+.challenge-card.completed{border-color:var(--success);background:var(--success-light)}
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.badge-item{text-align:center;padding:16px 8px;border-radius:10px;border:2px solid var(--gray-100);transition:.2s}
+.badge-item.earned{border-color:var(--warning);background:#fef3c7}
+.badge-item.locked{opacity:.4;filter:grayscale(1)}
+.badge-emoji{font-size:36px;display:block;margin-bottom:8px}
+.badge-name{font-size:12px;font-weight:700;color:var(--gray-700)}
+.badge-date{font-size:10px;color:var(--gray-400);margin-top:2px}
+.streak-fire{font-size:64px;display:block;text-align:center;animation:fireGlow 1.5s ease-in-out infinite alternate}
+@keyframes fireGlow{from{filter:drop-shadow(0 0 8px rgba(249,115,22,.5))}to{filter:drop-shadow(0 0 20px rgba(239,68,68,.8))}}
+.xp-bar-outer{height:16px;background:var(--gray-100);border-radius:20px;overflow:hidden;margin:8px 0}
+.xp-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width 1s ease}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🏆 Health Challenges & Rewards</h1><p class="page-sub">Daily streaks, badges aur motivation</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card yellow">
+        <span class="streak-fire">🔥</span>
+        <div class="stat-val" id="streak-count">7</div>
+        <div class="stat-lbl">Day Streak</div>
+      </div>
+      <div class="stat-card blue"><div class="stat-icon">⭐</div><div class="stat-val" id="total-xp">1240</div><div class="stat-lbl">Total XP Points</div></div>
+      <div class="stat-card green"><div class="stat-icon">🏅</div><div class="stat-val" id="badge-count">6</div><div class="stat-lbl">Badges Earned</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">📊 Your Level</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+            <div style="font-size:48px">🏥</div>
+            <div style="flex:1">
+              <div class="fw-6" style="font-size:18px" id="user-level">Health Warrior</div>
+              <div class="muted text-sm">Level <span id="level-num">8</span> · Next: Health Champion</div>
+              <div class="xp-bar-outer"><div class="xp-bar-fill" id="xp-bar" style="width:62%"></div></div>
+              <div class="muted text-xs">1240 / 2000 XP to next level</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📅 Today's Challenges</div>
+          <div id="challenges-list">
+            <div class="challenge-card active" onclick="completeChallenge(this, 50)">
+              <div class="flex-between"><span class="fw-6">💧 Drink 8 glasses of water</span><span class="badge yellow">+50 XP</span></div>
+              <div class="progress-bar mt-2"><div class="progress-fill" style="width:62%;background:var(--primary)"></div></div>
+              <div class="muted text-xs mt-1">5/8 glasses completed</div>
+            </div>
+            <div class="challenge-card" onclick="completeChallenge(this, 30)">
+              <div class="flex-between"><span class="fw-6">🏃 Walk 8,000 steps today</span><span class="badge blue">+30 XP</span></div>
+              <div class="progress-bar mt-2"><div class="progress-fill" style="width:25%;background:var(--success)"></div></div>
+              <div class="muted text-xs mt-1">2,000/8,000 steps</div>
+            </div>
+            <div class="challenge-card completed" onclick="completeChallenge(this, 20)">
+              <div class="flex-between"><span class="fw-6">😴 Log your sleep</span><span class="badge green">✅ Done</span></div>
+              <div class="muted text-xs mt-1">7.5 hours logged · Completed!</div>
+            </div>
+            <div class="challenge-card" onclick="completeChallenge(this, 40)">
+              <div class="flex-between"><span class="fw-6">❤️ Log your BP reading</span><span class="badge yellow">+40 XP</span></div>
+              <div class="muted text-xs mt-1">Tap to mark complete</div>
+            </div>
+            <div class="challenge-card" onclick="completeChallenge(this, 25)">
+              <div class="flex-between"><span class="fw-6">🧘 Do 10 min meditation</span><span class="badge purple">+25 XP</span></div>
+              <div class="muted text-xs mt-1">Reduces stress & improves focus</div>
+            </div>
+            <div class="challenge-card" onclick="completeChallenge(this, 35)">
+              <div class="flex-between"><span class="fw-6">🥗 Eat vegetables with every meal</span><span class="badge green">+35 XP</span></div>
+              <div class="muted text-xs mt-1">Fiber & micronutrients are essential!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">🏅 Your Badges</div>
+          <div class="badge-grid">
+            <div class="badge-item earned"><span class="badge-emoji">🔥</span><div class="badge-name">7-Day Streak</div><div class="badge-date">May 2026</div></div>
+            <div class="badge-item earned"><span class="badge-emoji">💧</span><div class="badge-name">Hydration Hero</div><div class="badge-date">May 2026</div></div>
+            <div class="badge-item earned"><span class="badge-emoji">😴</span><div class="badge-name">Sleep Champ</div><div class="badge-date">Apr 2026</div></div>
+            <div class="badge-item earned"><span class="badge-emoji">❤️</span><div class="badge-name">Heart Guard</div><div class="badge-date">Apr 2026</div></div>
+            <div class="badge-item earned"><span class="badge-emoji">🏃</span><div class="badge-name">10K Walker</div><div class="badge-date">Mar 2026</div></div>
+            <div class="badge-item earned"><span class="badge-emoji">🧠</span><div class="badge-name">Mind Master</div><div class="badge-date">Mar 2026</div></div>
+            <div class="badge-item locked"><span class="badge-emoji">🌟</span><div class="badge-name">30-Day Streak</div><div class="badge-date">Locked</div></div>
+            <div class="badge-item locked"><span class="badge-emoji">👑</span><div class="badge-name">Health King</div><div class="badge-date">Locked</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏆 Weekly Leaderboard</div>
+          <div>
+            <div class="list-item"><span style="font-size:22px">🥇</span><div style="flex:1"><div class="fw-6">Arjun S.</div><div class="muted text-sm">2,450 XP this week</div></div><span class="badge yellow">Rank #1</span></div>
+            <div class="list-item"><span style="font-size:22px">🥈</span><div style="flex:1"><div class="fw-6">Priya M.</div><div class="muted text-sm">1,980 XP this week</div></div><span class="badge blue">Rank #2</span></div>
+            <div class="list-item" style="background:var(--primary-light);border-radius:8px;padding:10px 12px;margin-bottom:4px"><span style="font-size:22px">⭐</span><div style="flex:1"><div class="fw-6">You (Yash)</div><div class="muted text-sm">1,240 XP this week</div></div><span class="badge green">Rank #3</span></div>
+            <div class="list-item"><span style="font-size:22px">4️⃣</span><div style="flex:1"><div class="fw-6">Rahul K.</div><div class="muted text-sm">980 XP this week</div></div><span class="badge">Rank #4</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('challenges');
+let totalXP = parseInt(localStorage.getItem('total_xp') || '1240');
+
+function completeChallenge(el, xp) {
+  if (el.classList.contains('completed')) return;
+  el.classList.add('completed');
+  el.querySelector('.badge').className = 'badge green';
+  el.querySelector('.badge').textContent = '✅ Done!';
+  totalXP += xp;
+  localStorage.setItem('total_xp', totalXP);
+  document.getElementById('total-xp').textContent = totalXP.toLocaleString();
+  const pct = Math.min((totalXP / 2000) * 100, 100);
+  document.getElementById('xp-bar').style.width = pct + '%';
+  showXPNotif(xp);
+}
+
+function showXPNotif(xp) {
+  const notif = document.createElement('div');
+  notif.style.cssText = 'position:fixed;top:80px;right:24px;background:var(--warning);color:white;padding:12px 20px;border-radius:10px;font-weight:700;font-size:16px;z-index:999;animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(245,158,11,.4)';
+  notif.textContent = `+${xp} XP! 🎉`;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 2500);
+}
+
+const streak = parseInt(localStorage.getItem('health_streak') || '7');
+document.getElementById('streak-count').textContent = streak;
+</script>
+</body>
+</html>

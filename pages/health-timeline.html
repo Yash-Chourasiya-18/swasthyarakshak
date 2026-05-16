@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Timeline | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.timeline-wrap{position:relative;padding-left:32px}
+.timeline-wrap::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--primary),#8b5cf6,var(--success));opacity:.3}
+.timeline-item{position:relative;margin-bottom:20px}
+.timeline-dot{position:absolute;left:-26px;top:14px;width:14px;height:14px;border-radius:50%;border:3px solid white;flex-shrink:0;box-shadow:0 0 0 2px var(--primary)}
+.timeline-dot.red{box-shadow:0 0 0 2px var(--danger);background:var(--danger)}
+.timeline-dot.green{box-shadow:0 0 0 2px var(--success);background:var(--success)}
+.timeline-dot.yellow{box-shadow:0 0 0 2px var(--warning);background:var(--warning)}
+.timeline-dot.blue{box-shadow:0 0 0 2px var(--primary);background:var(--primary)}
+.timeline-dot.purple{box-shadow:0 0 0 2px #8b5cf6;background:#8b5cf6}
+.timeline-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:14px;transition:.2s}
+.timeline-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--primary)}
+.timeline-date{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--primary);margin-bottom:6px}
+.timeline-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.timeline-value{font-size:20px;font-weight:800;color:var(--gray-800)}
+.change-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.change-up{background:#fee2e2;color:#991b1b}
+.change-down{background:#dcfce7;color:#166534}
+.change-stable{background:var(--gray-100);color:var(--gray-600)}
+.health-stat-hero{background:linear-gradient(135deg,#0f172a,#1e293b);color:white;border-radius:16px;padding:24px;margin-bottom:20px}
+.mini-chart{height:60px;display:flex;align-items:flex-end;gap:4px;margin-top:12px}
+.mini-bar{flex:1;border-radius:3px 3px 0 0;min-height:4px;transition:.3s}
+.filter-tab{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid var(--gray-200);background:white;transition:.2s}
+.filter-tab.active{background:var(--primary);color:white;border-color:var(--primary)}
+.insight-card{border-radius:10px;padding:14px;margin-bottom:10px;border-left:4px solid;display:flex;gap:12px;align-items:flex-start}
+.insight-icon{font-size:24px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">📅 Health Timeline</h1><p class="page-sub">Pichle 30 din mein kya changes aaye</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="health-stat-hero">
+      <div class="flex-between mb-3">
+        <div>
+          <div style="font-size:18px;font-weight:700">📊 30-Day Health Overview</div>
+          <div style="opacity:.7;font-size:13px;margin-top:2px" id="date-range">Loading...</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:36px;font-weight:800" id="overall-trend">↗ Improving</div>
+          <div style="opacity:.6;font-size:12px">Health trend</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800" id="tl-bp-avg">–</div><div style="opacity:.6;font-size:11px">Avg BP (sys)</div></div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800" id="tl-water-avg">–</div><div style="opacity:.6;font-size:11px">Avg Water (glasses)</div></div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800" id="tl-sleep-avg">–</div><div style="opacity:.6;font-size:11px">Avg Sleep (hrs)</div></div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800" id="tl-events">–</div><div style="opacity:.6;font-size:11px">Total Events</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="filter-tab active" onclick="filterTimeline('all',this)">All Events</button>
+      <button class="filter-tab" onclick="filterTimeline('bp',this)">❤️ BP</button>
+      <button class="filter-tab" onclick="filterTimeline('sugar',this)">🩸 Sugar</button>
+      <button class="filter-tab" onclick="filterTimeline('sleep',this)">😴 Sleep</button>
+      <button class="filter-tab" onclick="filterTimeline('activity',this)">🏃 Activity</button>
+      <button class="filter-tab" onclick="filterTimeline('mood',this)">🧠 Mood</button>
+      <button class="filter-tab" onclick="filterTimeline('medication',this)">💊 Meds</button>
+      <button class="filter-tab" onclick="filterTimeline('note',this)">🎤 Notes</button>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div id="timeline-area" class="timeline-wrap"></div>
+        <button class="btn btn-outline w-full mt-2" id="load-more-btn" onclick="loadMore()" style="display:none">Load More Events</button>
+      </div>
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">💡 AI Insights — Last 30 Days</div>
+          <div id="insights-area"></div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-title">➕ Add Manual Event</div>
+          <div class="form-group"><label>Event Type</label>
+            <select id="event-type" class="input">
+              <option value="medication">💊 Medication Taken</option>
+              <option value="doctor">👨‍⚕️ Doctor Visit</option>
+              <option value="surgery">🏥 Surgery / Procedure</option>
+              <option value="allergy">⚠️ Allergic Reaction</option>
+              <option value="injury">🤕 Injury</option>
+              <option value="symptom">🤒 Symptom Onset</option>
+              <option value="recovery">💚 Recovery / Improvement</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Description</label><input type="text" id="event-desc" placeholder="e.g. Visited Dr. Sharma for knee pain" class="input"></div>
+          <div class="form-group"><label>Date</label><input type="date" id="event-date" class="input"></div>
+          <button class="btn btn-primary w-full" onclick="addManualEvent()">+ Add Event</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📤 Export Timeline</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="exportPDF()">📄 Export PDF</button>
+            <button class="btn btn-outline" onclick="exportJSON()">📊 Export JSON</button>
+            <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+          </div>
+          <p class="muted text-sm mt-3">Share your health timeline with your doctor for better diagnosis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('timeline');
+document.getElementById('event-date').value = new Date().toISOString().split('T')[0];
+
+const EVENT_ICONS = { bp:'❤️', sugar:'🩸', sleep:'😴', water:'💧', activity:'🏃', mood:'🧠', medication:'💊', doctor:'👨‍⚕️', surgery:'🏥', allergy:'⚠️', injury:'🤕', symptom:'🤒', recovery:'💚', note:'🎤', scan:'📄', vaccine:'💉' };
+const DOT_COLORS = { bp:'red', sugar:'yellow', sleep:'blue', activity:'green', mood:'purple', medication:'blue', doctor:'green', injury:'red', recovery:'green', symptom:'yellow' };
+
+function buildTimeline() {
+  const events = [];
+  // Collect from all localStorage stores
+  [
+    { key: 'bp_readings', type: 'bp', label: d => `BP: ${d.sys}/${d.dia} mmHg`, value: d => `${d.sys}/${d.dia}`, extra: d => d.status },
+    { key: 'sugar_readings', type: 'sugar', label: d => `Sugar: ${d.val} mg/dL (${d.type})`, value: d => d.val },
+    { key: 'sleep_logs', type: 'sleep', label: d => `Sleep: ${d.hours} hours`, value: d => d.hours+'h', extra: d => d.quality },
+    { key: 'activities', type: 'activity', label: d => `${d.type}: ${(d.steps||0).toLocaleString()} steps`, value: d => (d.steps||0).toLocaleString() },
+    { key: 'mood_logs', type: 'mood', label: d => `Mood: ${d.mood}, Stress ${d.stress}/10`, value: d => d.mood },
+    { key: 'bmi_logs', type: 'bp', label: d => `BMI: ${d.bmi} (${d.cat})`, value: d => d.bmi },
+    { key: 'voice_notes', type: 'note', label: d => `Voice Note: ${d.title}`, value: d => d.cat },
+    { key: 'scan_history', type: 'scan', label: d => `Report Scan: ${d.type}`, value: d => `${d.flagged} flags` },
+    { key: 'medicine_scans', type: 'medication', label: d => `Medicine: ${d.name} — ${d.status}`, value: d => d.status },
+    { key: 'vaccine_records', type: 'vaccine', label: d => `Vaccine: ${d.name}`, value: d => '✅' },
+  ].forEach(cfg => {
+    const data = loadData(cfg.key);
+    data.forEach(d => events.push({ type: cfg.type, label: cfg.label(d), value: cfg.value(d), extra: cfg.extra ? cfg.extra(d) : '', time: d.time, rawTime: new Date(d.time || Date.now()) }));
+  });
+  // Add manual events
+  const manual = loadData('manual_events');
+  manual.forEach(d => events.push({ type: d.type, label: d.desc, value: '', extra: '', time: d.time, rawTime: new Date(d.date || d.time) }));
+  return events.sort((a, b) => b.rawTime - a.rawTime);
+}
+
+let allEvents = [], shown = 0;
+
+function filterTimeline(type, btn) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn?.classList.add('active');
+  const filtered = type === 'all' ? allEvents : allEvents.filter(e => e.type === type);
+  shown = 0;
+  renderTimeline(filtered);
+}
+
+function renderTimeline(events) {
+  const area = document.getElementById('timeline-area');
+  if (!events.length) { area.innerHTML = '<p class="muted text-sm" style="padding:16px 0">No events recorded yet. Start tracking your health!</p>'; return; }
+  const toShow = events.slice(0, 15);
+  shown = toShow.length;
+  area.innerHTML = toShow.map(e => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${DOT_COLORS[e.type]||'blue'}"></div>
+      <div class="timeline-card">
+        <div class="timeline-date">${e.time || 'Unknown time'}</div>
+        <div class="flex-between">
+          <div class="timeline-title">${EVENT_ICONS[e.type]||'📌'} ${e.label}</div>
+          ${e.extra ? `<span class="badge ${e.extra === 'Normal' ? 'green' : e.extra.toLowerCase().includes('high') ? 'red' : 'yellow'}">${e.extra}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('load-more-btn').style.display = events.length > 15 ? 'block' : 'none';
+}
+
+function loadMore() {
+  const more = allEvents.slice(shown, shown + 10);
+  shown += more.length;
+  const area = document.getElementById('timeline-area');
+  area.innerHTML += more.map(e => `<div class="timeline-item"><div class="timeline-dot ${DOT_COLORS[e.type]||'blue'}"></div><div class="timeline-card"><div class="timeline-date">${e.time||'–'}</div><div class="timeline-title">${EVENT_ICONS[e.type]||'📌'} ${e.label}</div></div></div>`).join('');
+}
+
+function addManualEvent() {
+  const type = document.getElementById('event-type').value;
+  const desc = document.getElementById('event-desc').value;
+  const date = document.getElementById('event-date').value;
+  if (!desc) return alert('Enter event description.');
+  saveData('manual_events', { type, desc, date });
+  document.getElementById('event-desc').value = '';
+  init();
+}
+
+function generateInsights(events) {
+  const bpHigh = events.filter(e => e.type === 'bp' && e.extra?.toLowerCase().includes('high')).length;
+  const sleepBad = events.filter(e => e.type === 'sleep' && (parseFloat(e.value) < 6)).length;
+  const moodLow = events.filter(e => e.type === 'mood' && (e.label.includes('Sad') || e.label.includes('Anxious'))).length;
+  const total = events.length;
+  const insights = [];
+  if (bpHigh > 2) insights.push({ color: 'var(--danger)', bg: '#fee2e2', icon: '❤️', title: `High BP episodes: ${bpHigh} times`, desc: 'Consider reducing sodium intake and stress. Book a cardiology checkup.' });
+  if (sleepBad > 3) insights.push({ color: 'var(--warning)', bg: '#fef3c7', icon: '😴', title: `Poor sleep: ${sleepBad} nights under 6 hours`, desc: 'Maintain consistent sleep schedule. Avoid screens before bed.' });
+  if (moodLow > 2) insights.push({ color: '#8b5cf6', bg: '#f3e8ff', icon: '🧠', title: `Low mood days: ${moodLow} times`, desc: 'Consider speaking to a counselor. Practice mindfulness daily.' });
+  if (total > 10) insights.push({ color: 'var(--success)', bg: '#dcfce7', icon: '🏆', title: `Great tracking! ${total} events logged`, desc: 'Your consistent tracking helps detect health patterns early.' });
+  if (!insights.length) insights.push({ color: 'var(--primary)', bg: var(--primary-light), icon: '💡', title: 'Start tracking to see AI insights', desc: 'Log at least 5–7 health events to get personalized insights.' });
+  document.getElementById('insights-area').innerHTML = insights.map(i => `<div class="insight-card" style="background:${i.bg};border-color:${i.color};margin-bottom:10px"><div class="insight-icon">${i.icon}</div><div><div class="fw-6" style="color:${i.color}">${i.title}</div><div class="muted text-sm mt-1">${i.desc}</div></div></div>`).join('');
+}
+
+function init() {
+  allEvents = buildTimeline();
+  filterTimeline('all', document.querySelector('.filter-tab.active'));
+  const now = new Date(); const past = new Date(); past.setDate(past.getDate() - 30);
+  document.getElementById('date-range').textContent = `${past.toLocaleDateString('en-IN')} — ${now.toLocaleDateString('en-IN')}`;
+  document.getElementById('tl-events').textContent = allEvents.length;
+  const bpData = loadData('bp_readings'); const sleepData = loadData('sleep_logs');
+  document.getElementById('tl-bp-avg').textContent = bpData.length ? Math.round(bpData.reduce((a,d)=>a+(d.sys||0),0)/bpData.length) : '–';
+  document.getElementById('tl-sleep-avg').textContent = sleepData.length ? (sleepData.reduce((a,d)=>a+(d.hours||0),0)/sleepData.length).toFixed(1) : '–';
+  document.getElementById('tl-water-avg').textContent = '5';
+  generateInsights(allEvents);
+}
+
+function exportPDF() { window.print(); }
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(allEvents, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'health_timeline.json'; a.click();
+}
+
+init();
+</script>
+</body>
+</html>

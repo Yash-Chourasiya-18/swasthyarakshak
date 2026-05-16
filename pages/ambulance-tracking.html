@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ambulance Live Tracking | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.live-map{background:linear-gradient(135deg,#dbeafe,#ede9fe);border-radius:16px;height:340px;position:relative;overflow:hidden;border:1px solid var(--gray-200)}
+.map-grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.15) 1px,transparent 1px);background-size:40px 40px}
+.road-h{position:absolute;background:rgba(255,255,255,.7);height:6px;border-radius:3px}
+.road-v{position:absolute;background:rgba(255,255,255,.7);width:6px;border-radius:3px}
+.ambulance-icon{position:absolute;font-size:32px;transition:all 1s ease;z-index:10;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.patient-icon{position:absolute;font-size:28px;z-index:10;animation:homePulse 2s ease-in-out infinite}
+@keyframes homePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.route-line{position:absolute;border-top:3px dashed rgba(239,68,68,.6);z-index:5;transform-origin:left center}
+.eta-overlay{position:absolute;top:16px;left:16px;background:rgba(255,255,255,.95);border-radius:10px;padding:12px 16px;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.speed-overlay{position:absolute;top:16px;right:16px;background:var(--primary);color:white;border-radius:10px;padding:12px 16px}
+.status-timeline{display:flex;flex-direction:column;gap:0}
+.status-step{display:flex;gap:14px;padding:14px 0;position:relative}
+.status-step::before{content:'';position:absolute;left:15px;top:42px;bottom:-14px;width:2px;background:var(--gray-200)}
+.status-step:last-child::before{display:none}
+.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;z-index:1}
+.step-dot.done{background:var(--success);box-shadow:0 0 0 4px var(--success-light)}
+.step-dot.current{background:var(--primary);box-shadow:0 0 0 4px var(--primary-light);animation:stepPulse 1.5s infinite}
+@keyframes stepPulse{0%,100%{box-shadow:0 0 0 4px var(--primary-light)}50%{box-shadow:0 0 0 8px rgba(14,165,233,.2)}}
+.step-dot.pending{background:var(--gray-200)}
+.sos-strip{background:var(--danger);color:white;padding:16px 20px;border-radius:12px;display:flex;align-items:center;gap:16px;margin-bottom:20px;animation:sosBlink 2s infinite}
+@keyframes sosBlink{0%,100%{opacity:1}50%{opacity:.85}}
+.driver-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:center}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🚑 Ambulance Live Tracking</h1><p class="page-sub">Real-time ambulance location track karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <div class="sos-strip">
+      <div style="font-size:36px">🚨</div>
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:16px">AMBULANCE DISPATCHED</div>
+        <div style="opacity:.9;font-size:13px">ID: AMB-2026-4821 · 108 Ambulance Service, Delhi</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:800" id="main-eta">8 min</div>
+        <div style="opacity:.8;font-size:12px">Estimated arrival</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <!-- Live Map -->
+        <div class="card mb-4">
+          <div class="card-title">📍 Live Location Map</div>
+          <div class="live-map" id="live-map">
+            <div class="map-grid-lines"></div>
+            <!-- Roads -->
+            <div class="road-h" style="top:40%;left:0;right:0"></div>
+            <div class="road-h" style="top:65%;left:0;right:0"></div>
+            <div class="road-v" style="left:35%;top:0;bottom:0"></div>
+            <div class="road-v" style="left:70%;top:0;bottom:0"></div>
+            <!-- Route dashed line -->
+            <div class="route-line" id="route-line" style="width:180px;top:40%;left:10%;transform:rotate(0deg)"></div>
+            <!-- Ambulance -->
+            <div class="ambulance-icon" id="ambulance" style="top:35%;left:8%">🚑</div>
+            <!-- Patient location -->
+            <div class="patient-icon" style="top:33%;left:66%">📍</div>
+            <!-- Hospital -->
+            <div style="position:absolute;bottom:20px;left:30%;font-size:20px;z-index:10">🏥</div>
+            <div style="position:absolute;bottom:6px;left:26%;font-size:10px;font-weight:700;color:var(--gray-600)">AIIMS</div>
+            <!-- ETA overlay -->
+            <div class="eta-overlay">
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase">ETA</div>
+              <div style="font-size:24px;font-weight:800;color:var(--danger)" id="map-eta">8:00</div>
+              <div style="font-size:10px;color:var(--gray-500)">minutes</div>
+            </div>
+            <!-- Speed overlay -->
+            <div class="speed-overlay">
+              <div style="font-size:11px;opacity:.8">Speed</div>
+              <div style="font-size:22px;font-weight:800" id="speed-display">42</div>
+              <div style="font-size:10px;opacity:.8">km/h</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="shareLocation()">📤 Share Location</button>
+            <button class="btn btn-outline btn-sm" onclick="openGoogleMaps()">🗺️ Google Maps</button>
+            <button class="btn btn-danger btn-sm" onclick="callAmbulance()">📞 Call Driver</button>
+          </div>
+        </div>
+
+        <!-- Driver Info -->
+        <div class="card">
+          <div class="card-title">👨‍⚕️ Ambulance Details</div>
+          <div class="driver-card">
+            <div style="width:52px;height:52px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">👨‍⚕️</div>
+            <div style="flex:1">
+              <div class="fw-6" style="font-size:16px">Ramesh Yadav</div>
+              <div class="muted text-sm">🚑 MH-04-AB-1234 · EMT Certified</div>
+              <div style="margin-top:4px"><span style="font-size:12px;color:var(--success);font-weight:600">⭐ 4.9 · 1,240 trips</span></div>
+            </div>
+            <a href="tel:+919876543210" class="btn btn-primary">📞 Call</a>
+          </div>
+          <div class="divider"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="stat-card blue" style="padding:12px"><div class="stat-icon">🚑</div><div class="stat-val" style="font-size:18px">ALS</div><div class="stat-lbl">Advanced Life Support</div></div>
+            <div class="stat-card green" style="padding:12px"><div class="stat-icon">🏥</div><div class="stat-val" style="font-size:14px">AIIMS Delhi</div><div class="stat-lbl">Destination Hospital</div></div>
+            <div class="stat-card yellow" style="padding:12px"><div class="stat-icon">📏</div><div class="stat-val" id="distance-left" style="font-size:18px">3.2</div><div class="stat-lbl">km remaining</div></div>
+            <div class="stat-card red" style="padding:12px"><div class="stat-icon">📞</div><div class="stat-val" style="font-size:14px">108</div><div class="stat-lbl">Emergency Helpline</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Status Timeline -->
+        <div class="card mb-4">
+          <div class="card-title">📋 Tracking Timeline</div>
+          <div class="status-timeline" id="status-timeline">
+            <div class="status-step">
+              <div class="step-dot done">✅</div>
+              <div>
+                <div class="fw-6">SOS Received</div>
+                <div class="muted text-sm" id="t1">12:03 AM · Location shared successfully</div>
+              </div>
+            </div>
+            <div class="status-step">
+              <div class="step-dot done">✅</div>
+              <div>
+                <div class="fw-6">Nearest Ambulance Found</div>
+                <div class="muted text-sm">AIIMS ALS Unit · 3.2 km away</div>
+              </div>
+            </div>
+            <div class="status-step">
+              <div class="step-dot done">✅</div>
+              <div>
+                <div class="fw-6">Ambulance Dispatched</div>
+                <div class="muted text-sm">Ramesh Yadav · MH-04-AB-1234</div>
+              </div>
+            </div>
+            <div class="status-step">
+              <div class="step-dot current">🚑</div>
+              <div>
+                <div class="fw-6" style="color:var(--primary)">En Route to You</div>
+                <div class="muted text-sm" id="enroute-text">Moving at 42 km/h · ETA: 8 minutes</div>
+              </div>
+            </div>
+            <div class="status-step">
+              <div class="step-dot pending">📍</div>
+              <div>
+                <div class="fw-6" style="color:var(--gray-400)">Arriving at Location</div>
+                <div class="muted text-sm" style="color:var(--gray-400)">Estimated: <span id="arrival-time">–</span></div>
+              </div>
+            </div>
+            <div class="status-step">
+              <div class="step-dot pending">🏥</div>
+              <div>
+                <div class="fw-6" style="color:var(--gray-400)">En Route to Hospital</div>
+                <div class="muted text-sm" style="color:var(--gray-400)">Destination: AIIMS Delhi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Onboard -->
+        <div class="card mb-4">
+          <div class="card-title">🛠️ Equipment Onboard</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <span class="badge green">✅ Defibrillator</span>
+            <span class="badge green">✅ Oxygen Cylinder</span>
+            <span class="badge green">✅ IV Drip Kit</span>
+            <span class="badge green">✅ ECG Monitor</span>
+            <span class="badge green">✅ Stretcher</span>
+            <span class="badge green">✅ First Aid Kit</span>
+            <span class="badge green">✅ Spine Board</span>
+            <span class="badge green">✅ Suction Device</span>
+            <span class="badge yellow">⚡ Ventilator</span>
+          </div>
+        </div>
+
+        <!-- Emergency contacts being notified -->
+        <div class="card">
+          <div class="card-title">📣 Notifications Sent</div>
+          <div class="list-item"><span style="font-size:22px">👨</span><div style="flex:1"><div class="fw-6">Rahul (Son)</div><div class="muted text-sm">+91 98765 43210 · SMS + Call sent</div></div><span class="badge green">✅ Notified</span></div>
+          <div class="list-item"><span style="font-size:22px">👩</span><div style="flex:1"><div class="fw-6">Priya (Daughter)</div><div class="muted text-sm">+91 91234 56789 · SMS sent</div></div><span class="badge green">✅ Notified</span></div>
+          <div class="list-item"><span style="font-size:22px">🏥</span><div style="flex:1"><div class="fw-6">AIIMS Emergency</div><div class="muted text-sm">Emergency Room pre-alerted</div></div><span class="badge green">✅ Ready</span></div>
+          <div class="divider"></div>
+          <button class="btn btn-outline w-full" onclick="addContact()">+ Notify Another Contact</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ambulance-tracking');
+
+// Arrival time
+const arrTime = new Date(Date.now() + 8 * 60000);
+document.getElementById('arrival-time').textContent = arrTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+// Simulate ambulance movement
+let eta = 8.0, dist = 3.2, posLeft = 8;
+
+const ambInterval = setInterval(() => {
+  eta = Math.max(0, eta - 1/60);
+  dist = Math.max(0, dist - 3.2/480);
+  posLeft = Math.min(62, posLeft + (62/480));
+  const speed = 35 + Math.round(Math.random() * 20);
+
+  document.getElementById('map-eta').textContent = eta > 0 ? Math.ceil(eta) + ':' + String(Math.round((eta % 1) * 60)).padStart(2,'0') : '0:00';
+  document.getElementById('main-eta').textContent = eta > 0 ? `${Math.ceil(eta)} min` : 'Arriving!';
+  document.getElementById('speed-display').textContent = eta > 0 ? speed : '0';
+  document.getElementById('distance-left').textContent = dist.toFixed(1);
+  document.getElementById('enroute-text').textContent = `Moving at ${speed} km/h · ETA: ${Math.ceil(eta)} minute${Math.ceil(eta) !== 1 ? 's' : ''}`;
+  document.getElementById('ambulance').style.left = posLeft + '%';
+
+  if (eta <= 0) {
+    clearInterval(ambInterval);
+    document.getElementById('ambulance').textContent = '📍';
+    document.getElementById('main-eta').textContent = 'Arrived! ✅';
+    document.getElementById('map-eta').textContent = '0';
+    document.getElementById('enroute-text').textContent = 'Ambulance has arrived at your location!';
+    document.getElementById('sos-strip').style.background = 'var(--success)';
+    alert('🚑 AMBULANCE ARRIVED!\n\nThe ambulance has reached your location.\nPlease go to the building entrance.\n\nDriver: Ramesh Yadav · 📞 +91 98765 43210');
+  }
+}, 1000);
+
+function shareLocation() { alert('📤 Live tracking link shared!\n\nTrack: https://swasthyarakshak.app/track/AMB-2026-4821\n\nThis link can be shared with family members.'); }
+function openGoogleMaps() { window.open('https://maps.google.com', '_blank'); }
+function callAmbulance() { window.open('tel:108'); }
+function addContact() {
+  const phone = prompt('Enter phone number to notify:');
+  if (phone) alert(`✅ SMS sent to ${phone}\n\nMessage: "Emergency ambulance dispatched. ETA ${Math.ceil(eta)} minutes. Please meet at location."`);
+}
+</script>
+</body>
+</html>

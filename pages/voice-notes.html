@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Voice Notes | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.mic-hero{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:16px;padding:40px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden}
+.mic-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(14,165,233,.1),transparent 70%)}
+.big-mic{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:52px;cursor:pointer;transition:.3s;box-shadow:0 0 0 0 rgba(14,165,233,.4);border:none}
+.big-mic.recording{animation:recPulse 1s infinite;background:linear-gradient(135deg,#ef4444,#dc2626)}
+@keyframes recPulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}70%{box-shadow:0 0 0 30px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.wave-viz{display:flex;align-items:center;justify-content:center;gap:3px;height:50px;margin:16px 0}
+.wave-bar{width:4px;background:rgba(255,255,255,.3);border-radius:2px;height:8px}
+.wave-bar.active{animation:waveAnim 0.6s ease-in-out infinite;background:var(--primary)}
+.wave-bar:nth-child(2){animation-delay:.1s}
+.wave-bar:nth-child(3){animation-delay:.2s}
+.wave-bar:nth-child(4){animation-delay:.3s}
+.wave-bar:nth-child(5){animation-delay:.4s}
+.wave-bar:nth-child(6){animation-delay:.3s}
+.wave-bar:nth-child(7){animation-delay:.2s}
+.wave-bar:nth-child(8){animation-delay:.1s}
+@keyframes waveAnim{0%,100%{height:8px}50%{height:40px}}
+.note-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:18px;margin-bottom:12px;transition:.2s;cursor:pointer}
+.note-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:var(--primary)}
+.note-transcript{font-size:14px;color:var(--gray-700);line-height:1.6;margin:8px 0}
+.note-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.note-tag{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--primary-light);color:var(--primary-dark)}
+.ai-insight{background:linear-gradient(135deg,var(--purple-light),var(--primary-light));border-radius:10px;padding:14px;margin-top:10px;border-left:4px solid var(--purple)}
+.timer{font-size:42px;font-weight:800;color:white;font-family:monospace;letter-spacing:4px}
+.category-pill{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;border:2px solid;cursor:pointer;transition:.2s}
+.category-pill.selected{color:white}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🎤 AI Voice Notes</h1><p class="page-sub">Bolkar symptoms save karo — AI auto-analyze karega</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="mic-hero">
+      <button class="big-mic" id="mic-btn" onclick="toggleRecording()">🎤</button>
+      <div class="timer" id="timer">00:00</div>
+      <div class="wave-viz" id="wave-viz">
+        <div class="wave-bar" id="wb1"></div><div class="wave-bar" id="wb2"></div>
+        <div class="wave-bar" id="wb3"></div><div class="wave-bar" id="wb4"></div>
+        <div class="wave-bar" id="wb5"></div><div class="wave-bar" id="wb6"></div>
+        <div class="wave-bar" id="wb7"></div><div class="wave-bar" id="wb8"></div>
+      </div>
+      <p style="color:rgba(255,255,255,.7);font-size:14px" id="mic-status">Tap mic to start recording your symptoms</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+        <button onclick="setLang('hi-IN')" id="btn-hi" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer">🇮🇳 हिंदी</button>
+        <button onclick="setLang('en-IN')" id="btn-en" style="background:var(--primary);color:white;border:1px solid var(--primary);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer">🇬🇧 English</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📝 Note Details</div>
+        <div class="form-group"><label>Note Title</label><input type="text" id="note-title" placeholder="e.g. Morning symptoms, Post-exercise pain..." class="input"></div>
+        <div class="form-group"><label>Category</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+            <span class="category-pill selected" style="border-color:var(--danger);background:var(--danger);color:white" onclick="selectCat(this,'symptoms')">🤒 Symptoms</span>
+            <span class="category-pill" style="border-color:var(--primary)" onclick="selectCat(this,'medication')">💊 Medication</span>
+            <span class="category-pill" style="border-color:var(--success)" onclick="selectCat(this,'wellness')">💚 Wellness</span>
+            <span class="category-pill" style="border-color:var(--warning)" onclick="selectCat(this,'pain')">😣 Pain</span>
+            <span class="category-pill" style="border-color:var(--purple)" onclick="selectCat(this,'mood')">🧠 Mood</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Transcript (auto-filled or type manually)</label>
+          <textarea id="transcript-area" class="input" rows="5" placeholder="Your spoken text will appear here automatically..."></textarea>
+        </div>
+        <div class="form-group"><label>Pain Level (if applicable)</label>
+          <input type="range" id="pain-level" min="0" max="10" value="0" class="w-full" oninput="document.getElementById('pain-display').textContent=this.value">
+          <div class="flex-between mt-1"><span class="muted text-xs">😌 No pain (0)</span><strong id="pain-display">0</strong><span class="muted text-xs">😱 Severe (10)</span></div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="saveNote()">💾 Save Voice Note</button>
+        <div id="save-alert" class="alert hidden mt-2"></div>
+      </div>
+
+      <div>
+        <div class="card mb-4" id="ai-analysis-card" style="display:none">
+          <div class="card-title">🤖 AI Analysis</div>
+          <div id="ai-analysis-content"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Saved Voice Notes (<span id="note-count">0</span>)</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="btn btn-sm btn-outline" onclick="filterNotes('all')">All</button>
+            <button class="btn btn-sm btn-outline" onclick="filterNotes('symptoms')">🤒 Symptoms</button>
+            <button class="btn btn-sm btn-outline" onclick="filterNotes('pain')">😣 Pain</button>
+            <button class="btn btn-sm btn-outline" onclick="filterNotes('medication')">💊 Meds</button>
+          </div>
+          <div id="notes-list"><p class="muted text-sm" style="padding:8px 0">No notes yet. Record your first voice note!</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('voice-notes');
+let recording = false, recognition = null, timerInterval = null, seconds = 0, lang = 'en-IN', selectedCat = 'symptoms';
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-hi').style.background = l === 'hi-IN' ? 'var(--primary)' : 'rgba(255,255,255,.15)';
+  document.getElementById('btn-en').style.background = l === 'en-IN' ? 'var(--primary)' : 'rgba(255,255,255,.15)';
+}
+
+function selectCat(el, cat) {
+  document.querySelectorAll('.category-pill').forEach(p => { p.classList.remove('selected'); p.style.color=''; p.style.background=''; });
+  el.classList.add('selected'); el.style.background = getComputedStyle(el).borderColor; el.style.color = 'white';
+  selectedCat = cat;
+}
+
+function toggleRecording() {
+  if (recording) { stopRecording(); return; }
+  startRecording();
+}
+
+function startRecording() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('Voice recording requires Chrome browser. You can type manually in the transcript box.'); return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = lang;
+  recognition.onresult = (e) => {
+    const t = Array.from(e.results).map(r => r[0].transcript).join(' ');
+    document.getElementById('transcript-area').value = t;
+  };
+  recognition.onerror = stopRecording;
+  recognition.start();
+  recording = true;
+  seconds = 0;
+  document.getElementById('mic-btn').className = 'big-mic recording';
+  document.getElementById('mic-btn').textContent = '⏹️';
+  document.getElementById('mic-status').textContent = '🔴 Recording... Speak your symptoms';
+  document.querySelectorAll('.wave-bar').forEach(b => b.classList.add('active'));
+  timerInterval = setInterval(() => {
+    seconds++;
+    const m = String(Math.floor(seconds/60)).padStart(2,'0');
+    const s = String(seconds%60).padStart(2,'0');
+    document.getElementById('timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopRecording() {
+  recognition?.stop();
+  recording = false;
+  clearInterval(timerInterval);
+  document.getElementById('mic-btn').className = 'big-mic';
+  document.getElementById('mic-btn').textContent = '🎤';
+  document.getElementById('mic-status').textContent = '✅ Recording stopped. Review and save.';
+  document.querySelectorAll('.wave-bar').forEach(b => b.classList.remove('active'));
+  analyzeTranscript();
+}
+
+function analyzeTranscript() {
+  const text = document.getElementById('transcript-area').value.toLowerCase();
+  if (!text.trim()) return;
+  const symptoms = [];
+  const urgencyWords = ['chest pain','breathless','unconscious','severe','emergency','seena dard','sans','behosh'];
+  const painWords = ['pain','ache','hurt','dard','takleef','jalan','sujan'];
+  const commonSymptoms = [
+    ['fever','bukhar'],['headache','sar dard','sir dard'],['cough','khansi'],
+    ['nausea','matli'],['vomiting','ulti'],['fatigue','kamzori','thakan'],
+    ['dizziness','chakkar'],['chest','seena'],['stomach','pet'],['joint','jodo']
+  ];
+  commonSymptoms.forEach(group => {
+    if (group.some(w => text.includes(w))) symptoms.push(group[0].charAt(0).toUpperCase() + group[0].slice(1));
+  });
+  const isUrgent = urgencyWords.some(w => text.includes(w));
+  const hasPain = painWords.some(w => text.includes(w));
+  const card = document.getElementById('ai-analysis-card');
+  const content = document.getElementById('ai-analysis-content');
+  card.style.display = 'block';
+  content.innerHTML = `
+    ${isUrgent ? '<div class="alert alert-red mb-3">🚨 <strong>Urgent symptoms detected!</strong> Please seek medical attention immediately or call 108.</div>' : ''}
+    <div class="list-item"><span>🩺</span><div><div class="fw-6">Symptoms Detected</div><div class="muted text-sm">${symptoms.length ? symptoms.join(', ') : 'No specific symptoms detected'}</div></div></div>
+    <div class="list-item"><span>😣</span><div><div class="fw-6">Pain Mentioned</div><div class="muted text-sm">${hasPain ? 'Yes — Rate your pain level on the slider' : 'No pain keywords found'}</div></div></div>
+    <div class="list-item"><span>⏱️</span><div><div class="fw-6">Recording Duration</div><div class="muted text-sm">${Math.floor(seconds/60)}m ${seconds%60}s · ${document.getElementById('transcript-area').value.split(' ').length} words</div></div></div>
+    <div class="ai-insight">🤖 <strong>AI Suggestion:</strong> ${isUrgent ? 'Seek emergency care immediately.' : symptoms.length > 2 ? `Multiple symptoms (${symptoms.join(', ')}) detected. Consider booking a doctor appointment.` : symptoms.length ? `${symptoms[0]} detected. Monitor and log daily.` : 'Note saved. Keep tracking symptoms regularly.'}</div>`;
+}
+
+function saveNote() {
+  const title = document.getElementById('note-title').value || `Note — ${new Date().toLocaleDateString('en-IN')}`;
+  const transcript = document.getElementById('transcript-area').value;
+  if (!transcript.trim()) return alert('Please record or type something first.');
+  const pain = document.getElementById('pain-level').value;
+  saveData('voice_notes', { title, transcript: transcript.slice(0, 200), cat: selectedCat, pain, duration: `${Math.floor(seconds/60)}m ${seconds%60}s`, lang });
+  const alertBox = document.getElementById('save-alert');
+  alertBox.className = 'alert alert-green'; alertBox.textContent = `✅ "${title}" saved successfully!`;
+  document.getElementById('note-title').value = ''; document.getElementById('transcript-area').value = '';
+  document.getElementById('timer').textContent = '00:00'; seconds = 0;
+  loadNotes();
+}
+
+function filterNotes(cat) {
+  const all = loadData('voice_notes');
+  const filtered = cat === 'all' ? all : all.filter(n => n.cat === cat);
+  renderNotesList(filtered);
+}
+
+function renderNotesList(notes) {
+  document.getElementById('note-count').textContent = loadData('voice_notes').length;
+  const catIcons = { symptoms: '🤒', medication: '💊', wellness: '💚', pain: '😣', mood: '🧠' };
+  if (!notes.length) { document.getElementById('notes-list').innerHTML = '<p class="muted text-sm" style="padding:8px 0">No notes in this category.</p>'; return; }
+  document.getElementById('notes-list').innerHTML = notes.slice(0, 8).map(n => `
+    <div class="note-card">
+      <div class="flex-between"><span class="fw-6">${catIcons[n.cat]||'📝'} ${n.title}</span><span class="muted text-xs">${n.time}</span></div>
+      <div class="note-transcript">${n.transcript}${n.transcript.length > 150 ? '...' : ''}</div>
+      <div class="note-tags">
+        <span class="note-tag">${n.cat}</span>
+        ${n.pain > 0 ? `<span class="note-tag" style="background:var(--danger-light);color:#991b1b">Pain: ${n.pain}/10</span>` : ''}
+        <span class="note-tag" style="background:var(--gray-100);color:var(--gray-600)">${n.lang === 'hi-IN' ? '🇮🇳 Hindi' : '🇬🇧 English'}</span>
+        ${n.duration ? `<span class="note-tag" style="background:var(--success-light);color:#166534">⏱ ${n.duration}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function loadNotes() { filterNotes('all'); }
+loadNotes();
+</script>
+</body>
+</html>

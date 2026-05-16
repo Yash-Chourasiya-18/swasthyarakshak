@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home Nurse Booking | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.nurse-card{background:white;border:1px solid var(--gray-200);border-radius:14px;padding:20px;margin-bottom:14px;transition:.2s;cursor:pointer}
+.nurse-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);border-color:var(--primary);transform:translateY(-2px)}
+.nurse-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--primary-light)}
+.nurse-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.rating-stars{color:#f59e0b;font-size:14px}
+.service-chip{display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary-dark);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin:3px}
+.availability-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.avail-day{padding:8px 4px;text-align:center;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--gray-200)}
+.avail-day.free{background:var(--success-light);color:#166534;border-color:var(--success)}
+.avail-day.selected{background:var(--primary);color:white;border-color:var(--primary)}
+.avail-day.busy{background:var(--gray-100);color:var(--gray-400);cursor:not-allowed}
+.price-box{background:var(--gray-50);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--gray-100)}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">👩‍⚕️ Home Nurse Booking</h1><p class="page-sub">Certified nurse ghar par book karo</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">👩‍⚕️</div><div class="stat-val">48</div><div class="stat-lbl">Available Nurses</div></div>
+      <div class="stat-card blue"><div class="stat-icon">⭐</div><div class="stat-val">4.8</div><div class="stat-lbl">Avg Rating</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">⏱️</div><div class="stat-val">45 min</div><div class="stat-lbl">Avg Arrival Time</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">⚙️ Filter Nurses</div>
+          <div class="form-group"><label>Service Required</label>
+            <select id="svc-filter" class="input" onchange="renderNurses()">
+              <option value="">All Services</option>
+              <option value="injection">💉 Injection / IV Drip</option>
+              <option value="wound">🩹 Wound Dressing</option>
+              <option value="elder">🧓 Elderly Care</option>
+              <option value="post-op">🏥 Post-Surgery Care</option>
+              <option value="physio">🦾 Physiotherapy</option>
+              <option value="diabetes">🩸 Diabetes Care</option>
+              <option value="baby">👶 Baby/Newborn Care</option>
+              <option value="icu">🫀 ICU-Level Care</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Gender Preference</label>
+              <select class="input"><option>No Preference</option><option>Female Nurse</option><option>Male Nurse</option></select>
+            </div>
+            <div class="form-group"><label>Duration</label>
+              <select class="input" id="duration-filter">
+                <option value="4h">4 Hours</option><option value="8h">8 Hours (Day)</option>
+                <option value="12h">12 Hours (Night)</option><option value="24h">24 Hours</option><option value="week">Weekly Package</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Start Date</label><input type="date" id="nurse-date" class="input"></div>
+        </div>
+
+        <div id="nurses-list"></div>
+      </div>
+
+      <div>
+        <div class="card mb-4" id="booking-card" style="display:none">
+          <div class="card-title">📋 Booking Details</div>
+          <div id="selected-nurse-info"></div>
+          <div class="divider"></div>
+          <div class="form-group"><label>Services Needed (select all)</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+              <span class="tag" onclick="toggleTag(this)">💉 Injection</span>
+              <span class="tag" onclick="toggleTag(this)">🩹 Dressing</span>
+              <span class="tag" onclick="toggleTag(this)">💊 Medicines</span>
+              <span class="tag" onclick="toggleTag(this)">🩺 Vitals Monitoring</span>
+              <span class="tag" onclick="toggleTag(this)">🛁 Patient Hygiene</span>
+              <span class="tag" onclick="toggleTag(this)">🍽️ Feeding Help</span>
+              <span class="tag" onclick="toggleTag(this)">📊 Report Documentation</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Patient Details</label><input type="text" id="patient-detail" class="input" placeholder="Age, condition, special requirements..."></div>
+          <div class="form-group"><label>Address</label><textarea id="nurse-addr" class="input" rows="2" placeholder="Full address with landmark"></textarea></div>
+          <div class="form-group"><label>Contact Number</label><input type="tel" id="nurse-contact" class="input" placeholder="+91 XXXXX XXXXX"></div>
+          <div class="divider"></div>
+          <div class="price-box mb-3">
+            <div style="font-size:28px;font-weight:800;color:var(--primary)" id="booking-price">₹–</div>
+            <div class="muted text-sm mt-1" id="booking-duration">–</div>
+            <div class="muted text-xs mt-1">GST inclusive · Cancellation free upto 2h</div>
+          </div>
+          <button class="btn btn-primary w-full" onclick="confirmNurse()">✅ Confirm & Book Nurse</button>
+          <button class="btn btn-outline w-full mt-2" onclick="document.getElementById('booking-card').style.display='none'">Cancel</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 My Bookings</div>
+          <div id="nurse-bookings"><p class="muted text-sm" style="padding:8px 0">No bookings yet.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('home-nurse');
+document.getElementById('nurse-date').value = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+const NURSES = [
+  { id:1, name:'Priya Sharma', exp:'8 years', rating:4.9, reviews:312, available:true, gender:'Female', city:'Noida', services:['injection','wound','elder','diabetes'], price4h:800, price8h:1400, price12h:2000, price24h:3200, emoji:'👩‍⚕️', badges:['ICU Trained','Certified'], lang:'Hindi, English' },
+  { id:2, name:'Rekha Devi', exp:'12 years', rating:4.8, reviews:524, available:true, gender:'Female', city:'Delhi', services:['elder','post-op','icu','physio'], price4h:1000, price8h:1800, price12h:2600, price24h:4200, emoji:'👩‍⚕️', badges:['ICU Expert','Senior Care'], lang:'Hindi' },
+  { id:3, name:'Anjali Singh', exp:'5 years', rating:4.7, reviews:189, available:true, gender:'Female', city:'Gurgaon', services:['baby','post-op','wound','injection'], price4h:700, price8h:1200, price12h:1800, price24h:2800, emoji:'👩‍⚕️', badges:['Paediatric Trained'], lang:'Hindi, English' },
+  { id:4, name:'Ramesh Kumar', exp:'10 years', rating:4.8, reviews:410, available:false, gender:'Male', city:'Noida', services:['physio','elder','icu','post-op'], price4h:900, price8h:1600, price12h:2400, price24h:3800, emoji:'👨‍⚕️', badges:['Physiotherapy Cert.','ICU Trained'], lang:'Hindi, English' },
+  { id:5, name:'Sunita Yadav', exp:'7 years', rating:4.9, reviews:267, available:true, gender:'Female', city:'Delhi', services:['diabetes','injection','elder','wound'], price4h:750, price8h:1300, price12h:1900, price24h:3000, emoji:'👩‍⚕️', badges:['Diabetic Care Expert'], lang:'Hindi' },
+];
+
+let selectedNurse = null;
+const DURATION_KEYS = { '4h':'price4h', '8h':'price8h', '12h':'price12h', '24h':'price24h', 'week':'price24h' };
+const DURATION_LABELS = { '4h':'4 Hours', '8h':'8 Hours (Day Shift)', '12h':'12 Hours (Night Shift)', '24h':'24 Hours', 'week':'Weekly Package (7 days)' };
+
+function renderNurses() {
+  const svcFilter = document.getElementById('svc-filter').value;
+  const filtered = svcFilter ? NURSES.filter(n => n.services.includes(svcFilter)) : NURSES;
+  const dur = document.getElementById('duration-filter').value;
+  const priceKey = DURATION_KEYS[dur] || 'price8h';
+
+  document.getElementById('nurses-list').innerHTML = filtered.map(n => `
+    <div class="nurse-card" onclick="${n.available ? `selectNurse(${n.id})` : ''}">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div class="nurse-avatar">${n.emoji}</div>
+        <div style="flex:1">
+          <div class="flex-between"><span class="fw-6" style="font-size:16px">${n.name}</span><span class="nurse-badge ${n.available ? 'green' : 'red'}" style="background:${n.available ? 'var(--success-light)' : 'var(--danger-light)'};color:${n.available ? '#166534' : '#991b1b'}">${n.available ? '✅ Available' : '⛔ Busy'}</span></div>
+          <div class="muted text-sm">${n.exp} experience · 📍 ${n.city}</div>
+          <div style="margin-top:4px"><span class="rating-stars">${'⭐'.repeat(Math.round(n.rating))}</span> <span class="fw-6">${n.rating}</span> <span class="muted text-sm">(${n.reviews} reviews)</span></div>
+          <div style="margin-top:6px">${n.badges.map(b => `<span class="service-chip">✓ ${b}</span>`).join('')}</div>
+          <div class="flex-between mt-2">
+            <span class="muted text-sm">🗣️ ${n.lang}</span>
+            <span class="fw-6" style="font-size:16px;color:var(--primary)">₹${n[priceKey]} <span class="muted text-xs fw-4">/ ${DURATION_LABELS[dur]}</span></span>
+          </div>
+        </div>
+      </div>
+      ${n.available ? `<button class="btn btn-primary w-full mt-3" style="font-size:13px" onclick="event.stopPropagation();selectNurse(${n.id})">📅 Book ${n.name.split(' ')[0]}</button>` : '<button class="btn btn-outline w-full mt-3" disabled style="opacity:.5;font-size:13px">Currently Unavailable</button>'}
+    </div>`).join('');
+}
+
+function selectNurse(id) {
+  selectedNurse = NURSES.find(n => n.id === id);
+  const dur = document.getElementById('duration-filter').value;
+  const priceKey = DURATION_KEYS[dur] || 'price8h';
+  const price = selectedNurse[priceKey] * (dur === 'week' ? 7 : 1);
+  document.getElementById('selected-nurse-info').innerHTML = `
+    <div style="display:flex;gap:12px;align-items:center;padding:14px;background:var(--primary-light);border-radius:10px">
+      <div class="nurse-avatar" style="width:48px;height:48px;font-size:22px">${selectedNurse.emoji}</div>
+      <div><div class="fw-6">${selectedNurse.name}</div><div class="muted text-sm">${selectedNurse.exp} · ⭐ ${selectedNurse.rating}</div></div>
+    </div>`;
+  document.getElementById('booking-price').textContent = `₹${price}`;
+  document.getElementById('booking-duration').textContent = DURATION_LABELS[dur];
+  document.getElementById('booking-card').style.display = 'block';
+  document.getElementById('booking-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function confirmNurse() {
+  if (!selectedNurse) return;
+  const dur = document.getElementById('duration-filter').value;
+  const priceKey = DURATION_KEYS[dur] || 'price8h';
+  const price = selectedNurse[priceKey] * (dur === 'week' ? 7 : 1);
+  const date = document.getElementById('nurse-date').value;
+  saveData('nurse_bookings', { nurse: selectedNurse.name, date, duration: DURATION_LABELS[dur], price });
+  alert(`✅ Nurse Booked!\n\n👩‍⚕️ Nurse: ${selectedNurse.name}\n📅 Date: ${date}\n⏱ Duration: ${DURATION_LABELS[dur]}\n💰 Amount: ₹${price}\n\nThe nurse will arrive within 2 hours of your slot.\nContact via SMS will be shared shortly.`);
+  loadBookings();
+  document.getElementById('booking-card').style.display = 'none';
+}
+
+function loadBookings() {
+  const data = loadData('nurse_bookings');
+  renderLog('nurse-bookings', data, d => `<div class="list-item"><span style="font-size:22px">👩‍⚕️</span><div style="flex:1"><div class="fw-6">${d.nurse}</div><div class="muted text-sm">${d.date} · ${d.duration} · ₹${d.price}</div></div><span class="badge green">Confirmed</span></div>`);
+}
+
+renderNurses(); loadBookings();
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SwasthyaRakshak+ | Health Dashboard</title>
+<link rel="stylesheet" href="css/main.css">
+<style>
+.hero{background:linear-gradient(135deg,#0ea5e9,#8b5cf6);color:white;border-radius:16px;padding:32px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+.hero h1{font-size:28px;font-weight:800;margin-bottom:6px}
+.hero p{opacity:.9;font-size:15px}
+.hero-score{text-align:center}
+.hero-score .num{font-size:64px;font-weight:800;line-height:1}
+.hero-score .lbl{font-size:13px;opacity:.8;margin-top:4px}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.feature-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:.2s;cursor:pointer;display:block}
+.feature-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:var(--primary)}
+.feature-icon{font-size:32px;margin-bottom:10px}
+.feature-title{font-weight:700;font-size:14px;margin-bottom:4px}
+.feature-desc{font-size:12px;color:var(--gray-500)}
+.section-title{font-size:18px;font-weight:700;margin-bottom:16px;margin-top:28px}
+.sos-bar{background:var(--danger-light);border:1px solid #fca5a5;border-radius:12px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">Health Dashboard</h1><p class="page-sub" id="date-display"></p></div>
+    <button class="btn btn-danger" onclick="triggerSOS()">🚨 EMERGENCY SOS</button>
+  </div>
+  <div class="content">
+
+    <!-- SOS Bar -->
+    <div class="sos-bar">
+      <div><strong>🚨 Emergency SOS</strong> — Press in case of any medical emergency to alert contacts & nearby hospitals.</div>
+      <button class="btn btn-danger" onclick="triggerSOS()">Activate SOS</button>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div>
+        <h1 id="greeting">Good Morning! 👋</h1>
+        <p>Your health is looking good today. Keep it up!</p>
+        <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+          <span style="background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:13px">❤️ Heart: Normal</span>
+          <span style="background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:13px">🫁 SpO2: 98%</span>
+          <span style="background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:13px">😴 Sleep: 7.5h</span>
+        </div>
+      </div>
+      <div class="hero-score">
+        <div class="num">88</div>
+        <div class="lbl">Health Score</div>
+        <div style="background:rgba(255,255,255,.2);padding:4px 16px;border-radius:20px;font-size:12px;margin-top:8px">✅ Great</div>
+      </div>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="section-title">🩺 Health Trackers</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/bp-tracker.html">
+        <div class="feature-icon">❤️</div>
+        <div class="feature-title">Smart BP Tracker</div>
+        <div class="feature-desc">Log blood pressure + risk alerts</div>
+      </a>
+      <a class="feature-card" href="pages/spo2.html">
+        <div class="feature-icon">🫁</div>
+        <div class="feature-title">SpO2 Monitor</div>
+        <div class="feature-desc">Blood oxygen saturation tracking</div>
+      </a>
+      <a class="feature-card" href="pages/sugar-tracker.html">
+        <div class="feature-icon">🩸</div>
+        <div class="feature-title">Sugar / Diabetes Tracker</div>
+        <div class="feature-desc">Daily glucose history + charts</div>
+      </a>
+      <a class="feature-card" href="pages/water-intake.html">
+        <div class="feature-icon">💧</div>
+        <div class="feature-title">Water Intake</div>
+        <div class="feature-desc">Hydration tracking with goals</div>
+      </a>
+      <a class="feature-card" href="pages/sleep-monitor.html">
+        <div class="feature-icon">😴</div>
+        <div class="feature-title">Sleep Monitor</div>
+        <div class="feature-desc">Sleep duration & quality tracking</div>
+      </a>
+      <a class="feature-card" href="pages/step-counter.html">
+        <div class="feature-icon">🏃</div>
+        <div class="feature-title">Step Counter</div>
+        <div class="feature-desc">Activity tracking with calorie calc</div>
+      </a>
+      <a class="feature-card" href="pages/bmi-calculator.html">
+        <div class="feature-icon">⚖️</div>
+        <div class="feature-title">BMI Calculator</div>
+        <div class="feature-desc">Height/weight health analysis</div>
+      </a>
+      <a class="feature-card" href="pages/mood-journal.html">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Mood Journal</div>
+        <div class="feature-desc">Stress, anxiety & mood logs</div>
+      </a>
+      <a class="feature-card" href="pages/women-health.html">
+        <div class="feature-icon">🌸</div>
+        <div class="feature-title">Women Health</div>
+        <div class="feature-desc">Period & ovulation tracker</div>
+      </a>
+      <a class="feature-card" href="pages/vaccination.html">
+        <div class="feature-icon">💉</div>
+        <div class="feature-title">Vaccination Tracker</div>
+        <div class="feature-desc">Child NIS schedule & records</div>
+      </a>
+    </div>
+
+    <div class="section-title">🚨 Emergency & Safety</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/fall-detection.html">
+        <div class="feature-icon">🫷</div>
+        <div class="feature-title">Fall Detection</div>
+        <div class="feature-desc">Elderly girne par auto alert</div>
+      </a>
+      <a class="feature-card" href="pages/crash-detection.html">
+        <div class="feature-icon">💥</div>
+        <div class="feature-title">Crash Detection</div>
+        <div class="feature-desc">Accident detect karke SOS</div>
+      </a>
+      <a class="feature-card" href="pages/voice-sos.html">
+        <div class="feature-icon">🎙️</div>
+        <div class="feature-title">Voice SOS</div>
+        <div class="feature-desc">"Help" bolte hi emergency trigger</div>
+      </a>
+      <a class="feature-card" href="pages/offline-sos.html">
+        <div class="feature-icon">📵</div>
+        <div class="feature-title">Offline Emergency</div>
+        <div class="feature-desc">Internet bina SOS SMS bhejna</div>
+      </a>
+      <a class="feature-card" href="pages/ambulance.html">
+        <div class="feature-icon">🚑</div>
+        <div class="feature-title">Live Ambulance</div>
+        <div class="feature-desc">Nearby ambulance request</div>
+      </a>
+      <a class="feature-card" href="pages/medical-id.html">
+        <div class="feature-icon">🪪</div>
+        <div class="feature-title">Medical ID</div>
+        <div class="feature-desc">Emergency info on lockscreen</div>
+      </a>
+      <a class="feature-card" href="pages/emergency-qr.html">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Emergency QR Code</div>
+        <div class="feature-desc">Scan karke doctor ko details mile</div>
+      </a>
+      <a class="feature-card" href="pages/safe-zone.html">
+        <div class="feature-icon">🏠</div>
+        <div class="feature-title">Safe Zone Alerts</div>
+        <div class="feature-desc">Patient bahar nikle toh notify</div>
+      </a>
+    </div>
+
+    <div class="section-title">🤖 AI & Smart Features</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/ai-risk.html">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-title">AI Disease Risk</div>
+        <div class="feature-desc">Vitals se risk prediction</div>
+      </a>
+      <a class="feature-card" href="pages/ai-diet.html">
+        <div class="feature-icon">🥗</div>
+        <div class="feature-title">AI Diet Planner</div>
+        <div class="feature-desc">Personalized Indian diet plan</div>
+      </a>
+      <a class="feature-card" href="pages/ai-workout.html">
+        <div class="feature-icon">💪</div>
+        <div class="feature-title">AI Workout Plan</div>
+        <div class="feature-desc">Exercise recommendations</div>
+      </a>
+      <a class="feature-card" href="pages/voice-assistant.html">
+        <div class="feature-icon">🎙️</div>
+        <div class="feature-title">Voice Assistant</div>
+        <div class="feature-desc">Hindi + English health chat</div>
+      </a>
+      <a class="feature-card" href="pages/med-interaction.html">
+        <div class="feature-icon">💊</div>
+        <div class="feature-title">Medicine Interaction</div>
+        <div class="feature-desc">Dangerous combo detection</div>
+      </a>
+      <a class="feature-card" href="pages/ai-report.html">
+        <div class="feature-icon">📄</div>
+        <div class="feature-title">AI Report Scanner</div>
+        <div class="feature-desc">Scan reports & get summary</div>
+      </a>
+      <a class="feature-card" href="pages/symptom-checker.html">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Symptom Checker</div>
+        <div class="feature-desc">Symptoms → possible conditions</div>
+      </a>
+      <a class="feature-card" href="pages/fake-medicine.html">
+        <div class="feature-icon">🔬</div>
+        <div class="feature-title">Fake Medicine Detector</div>
+        <div class="feature-desc">Barcode scan se verify karo</div>
+      </a>
+    </div>
+
+    <div class="section-title">👨‍👩‍👧 Family & Community</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/family-dashboard.html">
+        <div class="feature-icon">👨‍👩‍👧</div>
+        <div class="feature-title">Family Dashboard</div>
+        <div class="feature-desc">Pure family ki health ek screen par</div>
+      </a>
+      <a class="feature-card" href="pages/blood-donor.html">
+        <div class="feature-icon">🩸</div>
+        <div class="feature-title">Blood Donor Network</div>
+        <div class="feature-desc">Emergency blood donor finder</div>
+      </a>
+      <a class="feature-card" href="pages/health-challenges.html">
+        <div class="feature-icon">🏆</div>
+        <div class="feature-title">Health Challenges</div>
+        <div class="feature-desc">Daily streaks, badges & rewards</div>
+      </a>
+    </div>
+
+    <div class="section-title">🏥 Health Services</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/voice-notes.html">
+        <div class="feature-icon">🎤</div>
+        <div class="feature-title">AI Voice Notes</div>
+        <div class="feature-desc">Bolkar symptoms save karo</div>
+      </a>
+      <a class="feature-card" href="pages/health-timeline.html">
+        <div class="feature-icon">📅</div>
+        <div class="feature-title">Health Timeline</div>
+        <div class="feature-desc">30 din ke changes ek jagah</div>
+      </a>
+      <a class="feature-card" href="pages/medicine-availability.html">
+        <div class="feature-icon">🏪</div>
+        <div class="feature-title">Medicine Availability</div>
+        <div class="feature-desc">Nearby pharmacy stock checker</div>
+      </a>
+      <a class="feature-card" href="pages/lab-booking.html">
+        <div class="feature-icon">🧪</div>
+        <div class="feature-title">Lab Test Booking</div>
+        <div class="feature-desc">Ghar baithe blood test book karo</div>
+      </a>
+      <a class="feature-card" href="pages/home-nurse.html">
+        <div class="feature-icon">👩‍⚕️</div>
+        <div class="feature-title">Home Nurse Booking</div>
+        <div class="feature-desc">Certified nurse ghar par</div>
+      </a>
+      <a class="feature-card" href="pages/ambulance-tracking.html">
+        <div class="feature-icon">🚑</div>
+        <div class="feature-title">Ambulance Live Tracking</div>
+        <div class="feature-desc">Real-time ambulance location</div>
+      </a>
+    </div>
+
+    <div class="section-title">🌾 Rural India & Accessibility</div>
+    <div class="feature-grid">
+      <a class="feature-card" href="pages/rural-mode.html">
+        <div class="feature-icon">🌾</div>
+        <div class="feature-title">Rural India Mode</div>
+        <div class="feature-desc">Low internet, Hindi UI, large buttons</div>
+      </a>
+      <a class="feature-card" href="pages/asha-worker.html">
+        <div class="feature-icon">👩‍⚕️</div>
+        <div class="feature-title">ASHA Worker Mode</div>
+        <div class="feature-desc">Village healthcare worker dashboard</div>
+      </a>
+      <a class="feature-card" href="pages/fake-medicine.html">
+        <div class="feature-icon">🔬</div>
+        <div class="feature-title">Fake Medicine Detector</div>
+        <div class="feature-desc">Barcode scan se verify karo</div>
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script>
+// Fix paths for index.html (root level — prepend pages/ to hrefs)
+function getSidebarIndex() {
+  const html = getSidebar('dashboard');
+  // Replace href="xxx.html" → href="pages/xxx.html" (but keep ../index.html intact)
+  return html.replace(/href="(?!\.\.\/|http)([\w\-]+\.html)"/g, 'href="pages/$1"');
+}
+document.getElementById('sidebar-root').innerHTML = getSidebarIndex();
+
+const h = new Date().getHours();
+document.getElementById('greeting').textContent = h < 12 ? 'Good Morning! 👋' : h < 17 ? 'Good Afternoon! 👋' : 'Good Evening! 👋';
+document.getElementById('date-display').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+function triggerSOS() {
+  if (confirm('🚨 EMERGENCY SOS\n\nThis will:\n• Alert your emergency contacts\n• Share your location\n• Contact nearest hospital\n\nProceed?')) {
+    alert('✅ SOS Sent!\n• Emergency contacts notified\n• Nearest hospitals alerted\n• Ambulance request: AIIMS Delhi — ETA 8 min\n\nStay calm. Help is on the way!');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Women Health | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.cycle-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+.cycle-day{width:100%;aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;transition:.2s}
+.cycle-day.period{background:var(--danger-light);color:#991b1b;border:1px solid #fca5a5}
+.cycle-day.fertile{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.cycle-day.ovulation{background:var(--purple-light);color:#6d28d9;border:2px solid var(--purple)}
+.cycle-day.today{background:var(--primary);color:white}
+.cycle-day.normal{background:var(--gray-50);color:var(--gray-600);border:1px solid var(--gray-200)}
+.day-header{text-align:center;font-size:10px;font-weight:700;color:var(--gray-400);padding:4px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🌸 Women Health Tracker</h1><p class="page-sub">Period, ovulation & cycle tracking</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card pink"><div class="stat-icon">🌸</div><div class="stat-val" id="cycle-day">–</div><div class="stat-lbl">Current Cycle Day</div><span class="badge pink" id="cycle-phase">–</span></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="next-period">–</div><div class="stat-lbl">Next Period (Est.)</div></div>
+      <div class="stat-card purple"><div class="stat-icon">🥚</div><div class="stat-val" id="ovulation-date">–</div><div class="stat-lbl">Ovulation Window</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Period Tracker</div>
+        <div class="form-group"><label>Last Period Start Date</label><input type="date" id="period-start" class="input"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Cycle Length (days)</label><input type="number" id="cycle-len" value="28" min="21" max="40" class="input"></div>
+          <div class="form-group"><label>Period Duration (days)</label><input type="number" id="period-dur" value="5" min="2" max="10" class="input"></div>
+        </div>
+        <div class="form-group"><label>Flow Intensity Today</label>
+          <select id="flow" class="input"><option>Spotting</option><option>Light</option><option selected>Medium</option><option>Heavy</option></select>
+        </div>
+        <div class="form-group"><label>Today's Symptoms</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">😣 Cramps</span>
+            <span class="tag" onclick="toggleTag(this)">🤢 Nausea</span>
+            <span class="tag" onclick="toggleTag(this)">🤕 Headache</span>
+            <span class="tag" onclick="toggleTag(this)">😤 Mood Swings</span>
+            <span class="tag" onclick="toggleTag(this)">😩 Bloating</span>
+            <span class="tag" onclick="toggleTag(this)">😴 Fatigue</span>
+            <span class="tag" onclick="toggleTag(this)">🔙 Back Pain</span>
+            <span class="tag" onclick="toggleTag(this)">🤤 Cravings</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Notes</label><input type="text" id="period-notes" placeholder="Any additional notes..." class="input"></div>
+        <button class="btn btn-primary w-full" onclick="calculateCycle()">📊 Calculate & Save</button>
+        <div id="period-alert" class="alert hidden"></div>
+        <div class="alert alert-pink mt-3" style="background:var(--pink-light);border-left:4px solid var(--pink);color:#9d174d">🔒 All data is private & stored only on your device. Never shared.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cycle Calendar</div>
+        <div id="cycle-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;background:var(--danger-light);border:1px solid #fca5a5;border-radius:3px;display:inline-block"></span>Period</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;background:#dbeafe;border:1px solid #93c5fd;border-radius:3px;display:inline-block"></span>Fertile</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;background:var(--purple-light);border:2px solid var(--purple);border-radius:3px;display:inline-block"></span>Ovulation</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+          <div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div><div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>
+        </div>
+        <div class="cycle-calendar" id="cycle-calendar"></div>
+        <div class="divider"></div>
+        <div class="card-title" style="font-size:14px">Upcoming Predictions</div>
+        <div id="predictions"></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('women');
+document.getElementById('period-start').value = new Date().toISOString().split('T')[0];
+
+function calculateCycle() {
+  const startStr = document.getElementById('period-start').value;
+  const cycleLen = parseInt(document.getElementById('cycle-len').value) || 28;
+  const periodDur = parseInt(document.getElementById('period-dur').value) || 5;
+  const flow = document.getElementById('flow').value;
+  const notes = document.getElementById('period-notes').value;
+  if (!startStr) return alert('Please enter your last period start date.');
+  const start = new Date(startStr);
+  const ovulation = new Date(start); ovulation.setDate(start.getDate() + cycleLen - 14);
+  const nextPeriod = new Date(start); nextPeriod.setDate(start.getDate() + cycleLen);
+  const fertileStart = new Date(ovulation); fertileStart.setDate(ovulation.getDate() - 3);
+  const fertileEnd = new Date(ovulation); fertileEnd.setDate(ovulation.getDate() + 1);
+  const today = new Date();
+  const cycleDay = Math.ceil((today - start) / (1000 * 60 * 60 * 24)) + 1;
+  let phase = cycleDay <= periodDur ? '🩸 Period' : cycleDay <= 13 ? '🌱 Follicular' : cycleDay === 14 ? '🥚 Ovulation' : '🌙 Luteal';
+  saveData('period_logs', { startStr, cycleLen, periodDur, flow, notes, nextPeriod: nextPeriod.toDateString(), ovulation: ovulation.toDateString() });
+  document.getElementById('cycle-day').textContent = cycleDay > 0 && cycleDay <= cycleLen ? `Day ${cycleDay}` : '–';
+  document.getElementById('cycle-phase').textContent = phase;
+  document.getElementById('next-period').textContent = nextPeriod.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  document.getElementById('ovulation-date').textContent = ovulation.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  renderCalendar(start, periodDur, fertileStart, fertileEnd, ovulation);
+  renderPredictions(nextPeriod, ovulation, fertileStart, fertileEnd, cycleLen);
+  const alertBox = document.getElementById('period-alert');
+  alertBox.className = 'alert alert-green';
+  alertBox.textContent = `✅ Saved! Next period expected around ${nextPeriod.toLocaleDateString('en-IN', { day:'numeric', month:'long' })}.`;
+}
+
+function renderCalendar(start, periodDur, fertileStart, fertileEnd, ovulation) {
+  const cal = document.getElementById('cycle-calendar');
+  cal.innerHTML = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const startDOW = monthStart.getDay();
+  for (let i = 0; i < startDOW; i++) { const empty = document.createElement('div'); cal.appendChild(empty); }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(today.getFullYear(), today.getMonth(), d);
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    const periodEnd = new Date(start); periodEnd.setDate(start.getDate() + periodDur);
+    if (date >= start && date < periodEnd) cell.className = 'cycle-day period';
+    else if (date.toDateString() === ovulation.toDateString()) cell.className = 'cycle-day ovulation';
+    else if (date >= fertileStart && date <= fertileEnd) cell.className = 'cycle-day fertile';
+    else if (date.toDateString() === today.toDateString()) cell.className = 'cycle-day today';
+    else cell.className = 'cycle-day normal';
+    cal.appendChild(cell);
+  }
+}
+
+function renderPredictions(nextPeriod, ovulation, fertileStart, fertileEnd, cycleLen) {
+  const fmt = d => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const today = new Date();
+  const daysToNext = Math.ceil((nextPeriod - today) / (1000 * 60 * 60 * 24));
+  const next2 = new Date(nextPeriod); next2.setDate(next2.getDate() + cycleLen);
+  document.getElementById('predictions').innerHTML = `
+    <div class="list-item"><span style="font-size:22px">🩸</span><div style="flex:1"><div class="fw-6">Next Period</div><div class="muted">${fmt(nextPeriod)}</div></div><span class="badge red">In ${daysToNext} days</span></div>
+    <div class="list-item"><span style="font-size:22px">🥚</span><div style="flex:1"><div class="fw-6">Ovulation</div><div class="muted">${fmt(ovulation)}</div></div><span class="badge purple">Peak Fertile</span></div>
+    <div class="list-item"><span style="font-size:22px">💚</span><div style="flex:1"><div class="fw-6">Fertile Window</div><div class="muted">${fmt(fertileStart)} – ${fmt(fertileEnd)}</div></div><span class="badge blue">5 days</span></div>
+    <div class="list-item"><span style="font-size:22px">📅</span><div style="flex:1"><div class="fw-6">Period After That</div><div class="muted">${fmt(next2)}</div></div><span class="badge yellow">~${cycleLen} days</span></div>`;
+}
+
+// Load last saved data
+const lastLog = loadData('period_logs')[0];
+if (lastLog) {
+  document.getElementById('period-start').value = lastLog.startStr;
+  document.getElementById('cycle-len').value = lastLog.cycleLen;
+  document.getElementById('period-dur').value = lastLog.periodDur;
+  calculateCycle();
+}
+</script>
+</body>
+</html>

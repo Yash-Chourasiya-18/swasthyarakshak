@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mood Journal | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🧠 Mood & Mental Health Journal</h1><p class="page-sub">Stress, anxiety & mood tracking</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card purple"><div class="stat-icon">🧠</div><div class="stat-val" id="today-mood">–</div><div class="stat-lbl">Today's Mood</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="good-days">0/7</div><div class="stat-lbl">Good Days (week)</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">😰</div><div class="stat-val" id="avg-stress">–</div><div class="stat-lbl">Avg Stress Level</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Today's Mood</div>
+        <div class="form-group">
+          <label>How are you feeling right now?</label>
+          <div class="mood-grid-big" id="mood-selector">
+            <div class="mood-big" onclick="selectBigMood(this,'😄 Happy')">😄<span>Happy</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'🙂 Good')">🙂<span>Good</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'😐 Neutral')">😐<span>Neutral</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'😢 Sad')">😢<span>Sad</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'😰 Anxious')">😰<span>Anxious</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'😤 Angry')">😤<span>Angry</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'😴 Tired')">😴<span>Tired</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'🤩 Excited')">🤩<span>Excited</span></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Stress Level: <strong id="stress-display">5</strong>/10</label>
+          <input type="range" id="stress-slider" min="1" max="10" value="5" class="w-full" oninput="document.getElementById('stress-display').textContent=this.value">
+          <div class="flex-between mt-1"><span class="muted text-xs">😌 Low</span><span class="muted text-xs">😱 High</span></div>
+        </div>
+        <div class="form-group">
+          <label>Contributing Factors</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">Work Stress</span>
+            <span class="tag" onclick="toggleTag(this)">Poor Sleep</span>
+            <span class="tag" onclick="toggleTag(this)">Family Issues</span>
+            <span class="tag" onclick="toggleTag(this)">Financial</span>
+            <span class="tag" onclick="toggleTag(this)">Health Worry</span>
+            <span class="tag" onclick="toggleTag(this)">Loneliness</span>
+            <span class="tag" onclick="toggleTag(this)">Exercise</span>
+            <span class="tag" onclick="toggleTag(this)">Good News</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Journal Entry</label><textarea id="journal-text" class="input" rows="4" placeholder="What's on your mind? Writing helps process emotions..."></textarea></div>
+        <button class="btn btn-primary w-full" onclick="logMood()">💾 Save Entry</button>
+        <div id="mood-alert" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Weekly Mood Pattern</div>
+        <div class="bar-chart" id="mood-chart"></div>
+        <div class="divider"></div>
+        <div class="card-title" style="font-size:14px;margin-bottom:12px">Recent Entries</div>
+        <div id="mood-log"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Mental Wellness Tips</div>
+      <div class="grid-2">
+        <div class="alert alert-blue">🧘 <strong>Breathe:</strong> Try box breathing — inhale 4s, hold 4s, exhale 4s, hold 4s. Reduces anxiety instantly.</div>
+        <div class="alert alert-green">🚶 <strong>Move:</strong> Even a 10-minute walk can boost mood by releasing endorphins.</div>
+        <div class="alert alert-yellow">📵 <strong>Disconnect:</strong> Take 30-minute breaks from screens. Social media can amplify stress.</div>
+        <div class="alert alert-pink" style="background:var(--pink-light);border-left:4px solid var(--pink);color:#9d174d;padding:12px 16px;border-radius:8px;font-size:13px">❤️ <strong>Connect:</strong> Talk to a friend or family member. Social support is crucial for mental health.</div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('mood');
+
+function logMood() {
+  if (!window.selectedMood) return alert('Please select a mood first.');
+  const stress = document.getElementById('stress-slider').value;
+  const text = document.getElementById('journal-text').value;
+  const factors = [...document.querySelectorAll('.tag.selected')].map(t => t.textContent);
+  saveData('mood_logs', { mood: window.selectedMood, stress, text, factors });
+  const alertBox = document.getElementById('mood-alert');
+  if (parseInt(stress) >= 8) {
+    alertBox.className = 'alert alert-red';
+    alertBox.textContent = `⚠️ High stress detected (${stress}/10). Consider taking a break, meditating, or talking to someone.`;
+  } else {
+    alertBox.className = 'alert alert-green';
+    alertBox.textContent = `✅ Mood entry saved! Consistent journaling helps improve mental health.`;
+  }
+  document.getElementById('journal-text').value = '';
+  window.selectedMood = null;
+  document.querySelectorAll('.mood-big').forEach(m => m.classList.remove('selected'));
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('mood_logs');
+  if (data.length) {
+    document.getElementById('today-mood').textContent = data[0].mood.split(' ')[1] || data[0].mood;
+    const week = data.slice(0, 7);
+    const good = week.filter(d => d.mood.includes('Happy') || d.mood.includes('Good') || d.mood.includes('Excited')).length;
+    document.getElementById('good-days').textContent = `${good}/7`;
+    const avgStress = (week.reduce((a, d) => a + parseInt(d.stress), 0) / week.length).toFixed(1);
+    document.getElementById('avg-stress').textContent = `${avgStress}/10`;
+  }
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('mood-chart', recent.map(d => 10 - parseInt(d.stress)), ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].slice(-recent.length), '#8b5cf6');
+  renderLog('mood-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:26px">${d.mood.split(' ')[0]}</span>
+      <div style="flex:1">
+        <div class="fw-6">${d.mood} <small class="muted">· Stress: ${d.stress}/10</small></div>
+        <div class="muted">${d.text ? d.text.slice(0, 60) + (d.text.length > 60 ? '...' : '') : 'No journal entry'}</div>
+        ${d.factors?.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${d.factors.map(f => `<span class="badge blue" style="font-size:10px">${f}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

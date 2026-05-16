@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwasthyaRakshak+ | Health Trackers</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="trackers.css">
+</head>
+<body>
+<div class="app-layout">
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="logo">🏥 SWASTHYA+</div>
+  <a href="index.html" class="nav-item">🏠 Dashboard</a>
+  <div class="nav-section">HEALTH TRACKERS</div>
+  <a class="nav-item active" onclick="show('bp')">❤️ BP Tracker</a>
+  <a class="nav-item" onclick="show('spo2')">🫁 SpO2 Monitor</a>
+  <a class="nav-item" onclick="show('sugar')">🩸 Sugar Tracker</a>
+  <a class="nav-item" onclick="show('water')">💧 Water Intake</a>
+  <a class="nav-item" onclick="show('sleep')">😴 Sleep Monitor</a>
+  <a class="nav-item" onclick="show('steps')">🏃 Step Counter</a>
+  <a class="nav-item" onclick="show('bmi')">⚖️ BMI Calculator</a>
+  <a class="nav-item" onclick="show('mood')">🧠 Mood Journal</a>
+  <a class="nav-item" onclick="show('women')">🌸 Women Health</a>
+  <a class="nav-item" onclick="show('vaccine')">💉 Vaccination</a>
+</nav>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1 class="page-title" id="pageTitle">Smart BP Tracker</h1>
+      <p class="page-sub">Blood pressure logging & risk alerts</p>
+    </div>
+    <a href="index.html" class="btn-home">← Back to Dashboard</a>
+  </div>
+
+  <!-- 1. BP TRACKER -->
+  <section id="bp" class="section active">
+    <div class="stats-row">
+      <div class="stat-card red"><div class="stat-icon">❤️</div><div class="stat-val">120/80</div><div class="stat-lbl">Last Reading</div><span class="badge green">Normal</span></div>
+      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-val">7 day</div><div class="stat-lbl">Avg Readings</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">⚠️</div><div class="stat-val">1</div><div class="stat-lbl">High Risk Alerts</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log Blood Pressure</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Systolic (mmHg)</label><input type="number" id="bp-sys" placeholder="e.g. 120" class="input"></div>
+          <div class="form-group"><label>Diastolic (mmHg)</label><input type="number" id="bp-dia" placeholder="e.g. 80" class="input"></div>
+        </div>
+        <div class="form-group"><label>Pulse (bpm)</label><input type="number" id="bp-pulse" placeholder="e.g. 72" class="input"></div>
+        <div class="form-group"><label>Notes</label><input type="text" placeholder="After exercise, morning, etc." class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logBP()">Save Reading</button>
+        <div id="bp-alert" class="alert hidden"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">BP History</h3>
+        <div class="bar-chart" id="bp-chart"></div>
+        <div class="divider"></div>
+        <div id="bp-log" class="log-list"></div>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <h3 class="card-title">BP Risk Guide</h3>
+      <div class="risk-grid">
+        <div class="risk-item green">Normal<br><small>120/80 or below</small></div>
+        <div class="risk-item yellow">Elevated<br><small>120–129 / below 80</small></div>
+        <div class="risk-item orange">High Stage 1<br><small>130–139 / 80–89</small></div>
+        <div class="risk-item red">High Stage 2<br><small>140+ / 90+</small></div>
+        <div class="risk-item dark-red">Crisis<br><small>180+ / 120+</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. SpO2 -->
+  <section id="spo2" class="section">
+    <div class="stats-row">
+      <div class="stat-card blue"><div class="stat-icon">🫁</div><div class="stat-val">98%</div><div class="stat-lbl">Current SpO2</div><span class="badge green">Normal</span></div>
+      <div class="stat-card"><div class="stat-icon">💓</div><div class="stat-val">72</div><div class="stat-lbl">Heart Rate (bpm)</div></div>
+      <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-val">96%</div><div class="stat-lbl">7-day Low</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log SpO2 Reading</h3>
+        <div class="form-group"><label>Oxygen Level (%)</label><input type="number" id="spo2-val" placeholder="e.g. 98" min="70" max="100" class="input"></div>
+        <div class="form-group"><label>Heart Rate (bpm)</label><input type="number" placeholder="e.g. 72" class="input"></div>
+        <div class="form-group"><label>Activity</label>
+          <select class="input"><option>Resting</option><option>After Exercise</option><option>During Sleep</option><option>At Altitude</option></select>
+        </div>
+        <button class="btn btn-primary w-full" onclick="logSpO2()">Save Reading</button>
+        <div id="spo2-alert" class="alert hidden"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">SpO2 Levels Guide</h3>
+        <div class="risk-list">
+          <div class="risk-row green">95–100% — Normal (Healthy)</div>
+          <div class="risk-row yellow">91–94% — Mild Hypoxemia — Consult Doctor</div>
+          <div class="risk-row orange">86–90% — Moderate — Seek Medical Help</div>
+          <div class="risk-row red">&lt; 85% — Severe Emergency — Call 108!</div>
+        </div>
+        <div class="divider"></div>
+        <div id="spo2-log" class="log-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. SUGAR -->
+  <section id="sugar" class="section">
+    <div class="stats-row">
+      <div class="stat-card red"><div class="stat-icon">🩸</div><div class="stat-val">105</div><div class="stat-lbl">Fasting (mg/dL)</div><span class="badge green">Normal</span></div>
+      <div class="stat-card"><div class="stat-icon">🍽️</div><div class="stat-val">140</div><div class="stat-lbl">Post-meal (mg/dL)</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">📊</div><div class="stat-val">6.4%</div><div class="stat-lbl">HbA1c Estimate</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log Blood Sugar</h3>
+        <div class="form-group"><label>Glucose Level (mg/dL)</label><input type="number" id="sugar-val" placeholder="e.g. 105" class="input"></div>
+        <div class="form-group"><label>Reading Type</label>
+          <select id="sugar-type" class="input"><option>Fasting</option><option>Post-Meal (2hr)</option><option>Random</option><option>Bedtime</option></select>
+        </div>
+        <div class="form-group"><label>Date & Time</label><input type="datetime-local" class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logSugar()">Save Reading</button>
+        <div id="sugar-alert" class="alert hidden"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Weekly Glucose Chart</h3>
+        <div class="bar-chart" id="sugar-chart"></div>
+        <div class="divider"></div>
+        <div id="sugar-log" class="log-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. WATER -->
+  <section id="water" class="section">
+    <div class="water-hero">
+      <div class="water-circle">
+        <div class="water-fill" id="water-fill"></div>
+        <div class="water-text"><span id="water-count">0</span><small>/ 8 glasses</small></div>
+      </div>
+      <div class="water-info">
+        <h2>Daily Hydration Goal</h2>
+        <p class="muted">Drink 8 glasses (2 litres) of water daily</p>
+        <div class="water-drops" id="water-drops"></div>
+        <div class="mt-3">
+          <button class="btn btn-primary" onclick="addWater()">+ Add Glass</button>
+          <button class="btn btn-outline ml-2" onclick="resetWater()">Reset</button>
+        </div>
+        <div id="water-alert" class="alert mt-3 hidden"></div>
+      </div>
+    </div>
+    <div class="grid-2 mt-4">
+      <div class="card">
+        <h3 class="card-title">Set Daily Goal</h3>
+        <div class="form-group"><label>Daily Target (glasses)</label><input type="number" id="water-goal" value="8" class="input"></div>
+        <div class="form-group"><label>Reminder Interval</label>
+          <select class="input"><option>Every 1 hour</option><option>Every 2 hours</option><option>Every 30 minutes</option></select>
+        </div>
+        <button class="btn btn-primary w-full" onclick="setWaterGoal()">Save Goal</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Weekly Hydration</h3>
+        <div class="bar-chart" id="water-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. SLEEP -->
+  <section id="sleep" class="section">
+    <div class="stats-row">
+      <div class="stat-card blue"><div class="stat-icon">😴</div><div class="stat-val">7.5h</div><div class="stat-lbl">Last Night</div><span class="badge green">Good</span></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-val">82</div><div class="stat-lbl">Sleep Quality</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">📅</div><div class="stat-val">6.8h</div><div class="stat-lbl">Weekly Avg</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log Sleep</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Bedtime</label><input type="time" id="sleep-start" value="22:00" class="input"></div>
+          <div class="form-group"><label>Wake Time</label><input type="time" id="sleep-end" value="06:00" class="input"></div>
+        </div>
+        <div class="form-group"><label>Sleep Quality</label>
+          <div class="mood-grid">
+            <div class="mood-btn" onclick="selectMood(this,'sleep')" data-val="1">😞</div>
+            <div class="mood-btn" onclick="selectMood(this,'sleep')" data-val="2">😐</div>
+            <div class="mood-btn" onclick="selectMood(this,'sleep')" data-val="3">🙂</div>
+            <div class="mood-btn" onclick="selectMood(this,'sleep')" data-val="4">😊</div>
+            <div class="mood-btn" onclick="selectMood(this,'sleep')" data-val="5">😄</div>
+          </div>
+        </div>
+        <div class="form-group"><label>Notes</label><input type="text" placeholder="Woke up multiple times, had dreams..." class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logSleep()">Save Sleep Log</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Sleep Stages (Last Night)</h3>
+        <div class="sleep-bar-container">
+          <div class="sleep-stage-bar" style="width:15%;background:#6366f1">Deep</div>
+          <div class="sleep-stage-bar" style="width:45%;background:#8b5cf6">REM</div>
+          <div class="sleep-stage-bar" style="width:30%;background:#a78bfa">Light</div>
+          <div class="sleep-stage-bar" style="width:10%;background:#e2e8f0;color:#64748b">Awake</div>
+        </div>
+        <div class="sleep-legend mt-3">
+          <span><span class="dot" style="background:#6366f1"></span>Deep Sleep 15%</span>
+          <span><span class="dot" style="background:#8b5cf6"></span>REM 45%</span>
+          <span><span class="dot" style="background:#a78bfa"></span>Light 30%</span>
+          <span><span class="dot" style="background:#e2e8f0;color:#64748b"></span>Awake 10%</span>
+        </div>
+        <div class="divider"></div>
+        <div id="sleep-log" class="log-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. STEPS -->
+  <section id="steps" class="section">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">🏃</div><div class="stat-val" id="step-count">6,240</div><div class="stat-lbl">Steps Today</div><span class="badge yellow">64% of goal</span></div>
+      <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-val">312</div><div class="stat-lbl">Calories Burned</div></div>
+      <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-val">4.2 km</div><div class="stat-lbl">Distance</div></div>
+    </div>
+    <div class="card mb-4">
+      <h3 class="card-title">Today's Progress</h3>
+      <div class="progress-label flex-between mb-2"><span>6,240 / 10,000 steps</span><span class="muted">3,760 remaining</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:62.4%;background:#22c55e"></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log Steps Manually</h3>
+        <div class="form-group"><label>Steps Count</label><input type="number" id="steps-input" placeholder="e.g. 5000" class="input"></div>
+        <div class="form-group"><label>Activity Type</label>
+          <select class="input"><option>Walking</option><option>Running</option><option>Cycling</option><option>Swimming</option><option>Yoga</option><option>Gym</option></select>
+        </div>
+        <div class="form-group"><label>Duration (minutes)</label><input type="number" placeholder="e.g. 30" class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logSteps()">Save Activity</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Weekly Steps</h3>
+        <div class="bar-chart" id="steps-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. BMI -->
+  <section id="bmi" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">BMI Calculator</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Height (cm)</label><input type="number" id="bmi-h" placeholder="e.g. 170" class="input"></div>
+          <div class="form-group"><label>Weight (kg)</label><input type="number" id="bmi-w" placeholder="e.g. 70" class="input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Age</label><input type="number" id="bmi-age" placeholder="e.g. 25" class="input"></div>
+          <div class="form-group"><label>Gender</label><select class="input"><option>Male</option><option>Female</option></select></div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="calcBMI()">Calculate BMI</button>
+        <div id="bmi-result" class="bmi-result hidden"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">BMI Scale</h3>
+        <div class="bmi-scale">
+          <div class="bmi-range blue">Underweight<br><small>&lt; 18.5</small></div>
+          <div class="bmi-range green">Normal<br><small>18.5–24.9</small></div>
+          <div class="bmi-range yellow">Overweight<br><small>25–29.9</small></div>
+          <div class="bmi-range orange">Obese I<br><small>30–34.9</small></div>
+          <div class="bmi-range red">Obese II<br><small>35+</small></div>
+        </div>
+        <div id="bmi-advice" class="mt-3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. MOOD -->
+  <section id="mood" class="section">
+    <div class="stats-row">
+      <div class="stat-card purple"><div class="stat-icon">🧠</div><div class="stat-val">Good</div><div class="stat-lbl">Today's Mood</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val">5/7</div><div class="stat-lbl">Good days this week</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">😰</div><div class="stat-val">Low</div><div class="stat-lbl">Stress Level</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Log Today's Mood</h3>
+        <div class="form-group">
+          <label>How are you feeling?</label>
+          <div class="mood-grid-big" id="mood-selector">
+            <div class="mood-big" onclick="selectBigMood(this,'Happy')" >😄<span>Happy</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'Good')">🙂<span>Good</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'Neutral')">😐<span>Neutral</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'Sad')">😢<span>Sad</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'Anxious')">😰<span>Anxious</span></div>
+            <div class="mood-big" onclick="selectBigMood(this,'Angry')">😤<span>Angry</span></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Stress Level (1–10)</label>
+          <input type="range" id="stress-level" min="1" max="10" value="3" class="slider" oninput="document.getElementById('stress-val').textContent=this.value">
+          <div class="flex-between mt-1"><span class="muted">Low</span><span id="stress-val" class="badge blue">3</span><span class="muted">High</span></div>
+        </div>
+        <div class="form-group"><label>Journal Entry</label><textarea class="input" rows="3" placeholder="How was your day? What made you feel this way?"></textarea></div>
+        <button class="btn btn-primary w-full" onclick="logMood()">Save Entry</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Mood Journal History</h3>
+        <div id="mood-log" class="log-list"></div>
+        <div class="divider"></div>
+        <div class="alert-blue">💡 Tip: Regular mood journaling helps identify emotional patterns and reduces stress.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. WOMEN HEALTH -->
+  <section id="women" class="section">
+    <div class="stats-row">
+      <div class="stat-card pink"><div class="stat-icon">🌸</div><div class="stat-val">Day 14</div><div class="stat-lbl">Current Cycle Day</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val">16 May</div><div class="stat-lbl">Last Period Start</div></div>
+      <div class="stat-card purple"><div class="stat-icon">🥚</div><div class="stat-val">~30 May</div><div class="stat-lbl">Next Period (Est.)</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Period Tracker</h3>
+        <div class="form-group"><label>Last Period Start Date</label><input type="date" id="period-start" class="input"></div>
+        <div class="form-group"><label>Cycle Length (days)</label><input type="number" id="cycle-len" value="28" class="input"></div>
+        <div class="form-group"><label>Period Duration (days)</label><input type="number" id="period-dur" value="5" class="input"></div>
+        <div class="form-group"><label>Flow Intensity</label>
+          <select class="input"><option>Light</option><option>Medium</option><option>Heavy</option><option>Spotting</option></select>
+        </div>
+        <div class="form-group"><label>Symptoms</label>
+          <div class="symptoms-tags">
+            <span class="tag" onclick="toggleTag(this)">Cramps</span>
+            <span class="tag" onclick="toggleTag(this)">Bloating</span>
+            <span class="tag" onclick="toggleTag(this)">Headache</span>
+            <span class="tag" onclick="toggleTag(this)">Mood Swings</span>
+            <span class="tag" onclick="toggleTag(this)">Fatigue</span>
+            <span class="tag" onclick="toggleTag(this)">Back Pain</span>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" onclick="calcPeriod()">Calculate & Save</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Cycle Predictions</h3>
+        <div id="period-predictions" class="log-list">
+          <div class="list-item"><span>🩸</span><div><div class="fw-6">Next Period</div><div class="muted text-sm">~13 June 2026</div></div><span class="badge pink">In 28 days</span></div>
+          <div class="list-item"><span>🥚</span><div><div class="fw-6">Ovulation Window</div><div class="muted text-sm">27 May – 2 June 2026</div></div><span class="badge purple">Fertile</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="alert" style="background:#fce7f3;border-left:4px solid #ec4899;color:#9d174d;padding:12px;border-radius:8px">🌸 All data is private and stored only on your device.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. VACCINE -->
+  <section id="vaccine" class="section">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">💉</div><div class="stat-val">12</div><div class="stat-lbl">Vaccines Done</div></div>
+      <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-val">2</div><div class="stat-lbl">Overdue</div></div>
+      <div class="stat-card blue"><div class="stat-icon">📅</div><div class="stat-val">3</div><div class="stat-lbl">Upcoming (30 days)</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Vaccination Schedule</h3>
+        <div class="form-group"><label>Child's Name</label><input type="text" placeholder="e.g. Aarav" class="input"></div>
+        <div class="form-group"><label>Date of Birth</label><input type="date" class="input"></div>
+        <button class="btn btn-primary w-full" onclick="genVaccineSchedule()">Generate Schedule</button>
+        <div class="divider"></div>
+        <h4 class="mb-2">Add Custom Vaccine</h4>
+        <div class="form-row">
+          <div class="form-group"><label>Vaccine Name</label><input type="text" id="vac-name" placeholder="e.g. MMR" class="input"></div>
+          <div class="form-group"><label>Date Given</label><input type="date" id="vac-date" class="input"></div>
+        </div>
+        <button class="btn btn-outline w-full" onclick="addVaccine()">Add Record</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Vaccine Records</h3>
+        <div id="vaccine-list" class="log-list">
+          <div class="list-item"><span class="badge green">✅ Done</span><div><div class="fw-6">BCG Vaccine</div><div class="muted text-sm">At Birth • 15 Jan 2024</div></div></div>
+          <div class="list-item"><span class="badge green">✅ Done</span><div><div class="fw-6">Hepatitis B (1st dose)</div><div class="muted text-sm">At Birth • 15 Jan 2024</div></div></div>
+          <div class="list-item"><span class="badge green">✅ Done</span><div><div class="fw-6">OPV (1st dose)</div><div class="muted text-sm">6 weeks • 26 Feb 2024</div></div></div>
+          <div class="list-item"><span class="badge red">⚠️ Due</span><div><div class="fw-6">MMR Vaccine</div><div class="muted text-sm">12 months • Overdue!</div></div></div>
+          <div class="list-item"><span class="badge yellow">📅 Soon</span><div><div class="fw-6">Typhoid Vaccine</div><div class="muted text-sm">Due in 15 days</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script src="trackers.js"></script>
+</body>
+</html>

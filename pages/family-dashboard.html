@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Family Dashboard | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.family-member-card{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px;transition:.2s;cursor:pointer}
+.family-member-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
+.member-avatar{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;position:relative}
+.online-dot{position:absolute;bottom:2px;right:2px;width:12px;height:12px;background:var(--success);border-radius:50%;border:2px solid white}
+.health-mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.health-pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.alert-count{position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.vitals-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.vital-mini{font-size:12px;color:var(--gray-500)}
+.vital-mini strong{color:var(--gray-800);font-size:14px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">👨‍👩‍👧 Family Health Dashboard</h1><p class="page-sub">Pure family ki health ek screen par</p></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="showAddMember()">+ Add Member</button>
+      <a href="../index.html" class="btn-home">← Dashboard</a>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-val" id="family-count">4</div><div class="stat-lbl">Family Members</div></div>
+      <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-val" id="alert-count">1</div><div class="stat-lbl">Health Alerts</div></div>
+      <div class="stat-card blue"><div class="stat-icon">✅</div><div class="stat-val">3/4</div><div class="stat-lbl">Members Healthy</div></div>
+    </div>
+
+    <div id="family-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-bottom:20px"></div>
+
+    <div id="add-member-card" class="card" style="display:none">
+      <div class="card-title">➕ Add Family Member</div>
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" id="fm-name" placeholder="Yash Tyagi" class="input"></div>
+        <div class="form-group"><label>Relation</label>
+          <select id="fm-relation" class="input"><option>Myself 👤</option><option>Father 👨</option><option>Mother 👩</option><option>Spouse 💑</option><option>Son 👦</option><option>Daughter 👧</option><option>Grandfather 👴</option><option>Grandmother 👵</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Age</label><input type="number" id="fm-age" placeholder="30" class="input"></div>
+        <div class="form-group"><label>Blood Group</label>
+          <select id="fm-blood" class="input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Health Conditions</label><input type="text" id="fm-conditions" placeholder="Diabetes, Hypertension..." class="input"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="addMember()">💾 Save Member</button>
+        <button class="btn btn-outline" onclick="hideAddMember()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚠️ Family Health Alerts</div>
+      <div id="family-alerts">
+        <div class="list-item"><span style="font-size:22px">⚠️</span><div style="flex:1"><div class="fw-6">Dadi — BP High: 158/98 mmHg</div><div class="muted">Logged 2 hours ago · Needs doctor visit</div></div><span class="badge red">Urgent</span></div>
+        <div class="list-item"><span style="font-size:22px">💊</span><div style="flex:1"><div class="fw-6">Papa — Metformin reminder at 8 PM</div><div class="muted">Tonight · Diabetes medication</div></div><span class="badge yellow">Reminder</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('family');
+
+const defaultMembers = [
+  { name: 'Yash (Me)', relation: 'Myself 👤', age: 24, blood: 'B+', conditions: 'None', emoji: '👤', bp: '118/76', sugar: '95', status: 'healthy' },
+  { name: 'Papa', relation: 'Father 👨', age: 54, blood: 'O+', conditions: 'Diabetes T2', emoji: '👨', bp: '132/84', sugar: '148', status: 'monitor' },
+  { name: 'Mama', relation: 'Mother 👩', age: 50, blood: 'A+', conditions: 'None', emoji: '👩', bp: '122/80', sugar: '102', status: 'healthy' },
+  { name: 'Dadi', relation: 'Grandmother 👵', age: 74, blood: 'B+', conditions: 'Hypertension, Arthritis', emoji: '👵', bp: '158/98', sugar: '110', status: 'alert' },
+];
+
+let members = JSON.parse(localStorage.getItem('family_members') || JSON.stringify(defaultMembers));
+
+function renderFamily() {
+  document.getElementById('family-count').textContent = members.length;
+  document.getElementById('alert-count').textContent = members.filter(m => m.status === 'alert').length;
+  document.getElementById('family-grid').innerHTML = members.map((m, i) => {
+    const statusColor = m.status === 'healthy' ? 'var(--success)' : m.status === 'monitor' ? 'var(--warning)' : 'var(--danger)';
+    const bgColor = m.status === 'healthy' ? '#dcfce7' : m.status === 'monitor' ? '#fef3c7' : '#fee2e2';
+    return `<div class="family-member-card" onclick="viewMember(${i})">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div class="member-avatar" style="background:${bgColor}">
+          ${m.emoji}<div class="online-dot" style="background:${statusColor}"></div>
+        </div>
+        <div>
+          <div class="fw-6" style="font-size:16px">${m.name}</div>
+          <div class="muted text-sm">${m.relation} · Age ${m.age} · ${m.blood}</div>
+        </div>
+      </div>
+      <div class="vitals-row">
+        <div class="vital-mini">❤️ BP<br><strong>${m.bp || '–'}</strong></div>
+        <div class="vital-mini">🩸 Sugar<br><strong>${m.sugar || '–'}</strong></div>
+        <div class="vital-mini">🏥 Status<br><strong style="color:${statusColor}">${m.status === 'healthy' ? '✅ Good' : m.status === 'monitor' ? '⚡ Monitor' : '🚨 Alert'}</strong></div>
+      </div>
+      <div class="health-mini">
+        ${m.conditions ? `<span class="health-pill" style="background:#fee2e2;color:#991b1b">${m.conditions}</span>` : '<span class="health-pill" style="background:var(--success-light);color:#166534">Healthy</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewMember(i) { alert(`👤 ${members[i].name}\n\nAge: ${members[i].age}\nBlood: ${members[i].blood}\nConditions: ${members[i].conditions || 'None'}\nBP: ${members[i].bp || '–'}\nSugar: ${members[i].sugar || '–'}`); }
+function showAddMember() { document.getElementById('add-member-card').style.display = 'block'; }
+function hideAddMember() { document.getElementById('add-member-card').style.display = 'none'; }
+
+function addMember() {
+  const name = document.getElementById('fm-name').value;
+  const relation = document.getElementById('fm-relation').value;
+  const age = parseInt(document.getElementById('fm-age').value) || 30;
+  const blood = document.getElementById('fm-blood').value;
+  const conditions = document.getElementById('fm-conditions').value;
+  if (!name) return alert('Enter member name.');
+  const emojis = {'Myself 👤':'👤','Father 👨':'👨','Mother 👩':'👩','Spouse 💑':'💑','Son 👦':'👦','Daughter 👧':'👧','Grandfather 👴':'👴','Grandmother 👵':'👵'};
+  members.push({ name, relation, age, blood, conditions, emoji: emojis[relation] || '👤', bp: '–', sugar: '–', status: 'healthy' });
+  localStorage.setItem('family_members', JSON.stringify(members));
+  hideAddMember();
+  renderFamily();
+}
+renderFamily();
+</script>
+</body>
+</html>

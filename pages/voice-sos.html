@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voice SOS | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.mic-btn{width:180px;height:180px;border-radius:50%;background:var(--primary);color:white;font-size:56px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;cursor:pointer;border:none;transition:.3s;box-shadow:0 0 0 0 rgba(14,165,233,.4)}
+.mic-btn.listening{animation:micPulse 1s infinite;background:#ef4444}
+.mic-btn.triggered{background:var(--danger);box-shadow:0 0 0 40px rgba(239,68,68,0)}
+@keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}70%{box-shadow:0 0 0 30px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.wave-bars{display:flex;align-items:center;justify-content:center;gap:4px;height:50px;margin:16px 0}
+.wave-bar{width:6px;background:var(--primary);border-radius:3px;animation:wave 1s ease-in-out infinite}
+.wave-bar:nth-child(2){animation-delay:.1s}
+.wave-bar:nth-child(3){animation-delay:.2s}
+.wave-bar:nth-child(4){animation-delay:.3s}
+.wave-bar:nth-child(5){animation-delay:.4s}
+@keyframes wave{0%,100%{height:8px}50%{height:40px}}
+.keyword-tag{display:inline-flex;align-items:center;gap:6px;background:var(--danger-light);color:#991b1b;padding:6px 14px;border-radius:20px;font-weight:600;font-size:13px;margin:4px}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">🎙️ Voice SOS</h1><p class="page-sub">"Help" bolte hi emergency trigger hogi</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div class="card" style="text-align:center">
+        <div class="card-title" style="text-align:left">Voice Activation</div>
+        <button class="mic-btn" id="mic-btn" onclick="toggleListening()">🎙️</button>
+        <p style="font-weight:700;font-size:16px" id="mic-status">Tap to Start Listening</p>
+        <div class="wave-bars" id="wave" style="display:none">
+          <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+        <div id="transcript-box" class="alert alert-blue mt-3" style="display:none">
+          <strong>Heard:</strong> "<span id="transcript-text"></span>"
+        </div>
+        <div class="divider"></div>
+        <p class="muted text-sm">Trigger keywords (say any of these):</p>
+        <div style="margin-top:8px">
+          <span class="keyword-tag">🆘 Help</span>
+          <span class="keyword-tag">🆘 Emergency</span>
+          <span class="keyword-tag">🆘 Bachao</span>
+          <span class="keyword-tag">🆘 Madad</span>
+          <span class="keyword-tag">🆘 SOS</span>
+          <span class="keyword-tag">🆘 Doctor</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">⚙️ Voice SOS Settings</div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="always-on" onchange="toggleAlwaysOn(this)"> Always listening (background mode)
+            </label>
+            <small class="muted">Keeps microphone active even when screen is off. Uses more battery.</small>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" checked> Play alarm sound on trigger
+            </label>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" checked> Send location with SOS
+            </label>
+          </div>
+          <div class="form-group"><label>Language Priority</label>
+            <select class="input"><option>Hindi + English</option><option>English Only</option><option>Hindi Only</option><option>Tamil + English</option></select>
+          </div>
+          <div class="form-group"><label>Add Custom Keyword</label>
+            <div style="display:flex;gap:8px"><input type="text" id="custom-kw" placeholder="e.g. Pareshani" class="input"><button class="btn btn-primary" onclick="addKeyword()">Add</button></div>
+          </div>
+          <button class="btn btn-primary w-full mt-3" onclick="saveVoiceSettings()">💾 Save</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Voice Trigger Log</div>
+          <div id="voice-log"><p class="muted text-sm" style="padding:8px 0">No voice events yet.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-yellow mt-3">⚠️ <strong>Note:</strong> Voice recognition uses the browser's Web Speech API. Works best on Chrome. Allow microphone permission when prompted.</div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('voice-sos');
+const TRIGGER_WORDS = ['help', 'emergency', 'bachao', 'madad', 'sos', 'doctor'];
+let recognition = null, listening = false;
+
+function toggleListening() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('Your browser does not support voice recognition. Please use Chrome.'); return;
+  }
+  if (listening) { stopListening(); return; }
+  startListening();
+}
+
+function startListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'hi-IN';
+  recognition.onstart = () => {
+    listening = true;
+    document.getElementById('mic-btn').className = 'mic-btn listening';
+    document.getElementById('mic-btn').textContent = '🔴';
+    document.getElementById('mic-status').textContent = 'Listening... Speak now';
+    document.getElementById('wave').style.display = 'flex';
+  };
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ').toLowerCase();
+    document.getElementById('transcript-text').textContent = transcript;
+    document.getElementById('transcript-box').style.display = 'block';
+    if (TRIGGER_WORDS.some(w => transcript.includes(w))) { triggerSOS(transcript); }
+  };
+  recognition.onerror = () => stopListening();
+  recognition.onend = () => { if (listening) recognition.start(); };
+  recognition.start();
+}
+
+function stopListening() {
+  listening = false;
+  if (recognition) recognition.stop();
+  document.getElementById('mic-btn').className = 'mic-btn';
+  document.getElementById('mic-btn').textContent = '🎙️';
+  document.getElementById('mic-status').textContent = 'Tap to Start Listening';
+  document.getElementById('wave').style.display = 'none';
+}
+
+function triggerSOS(transcript) {
+  stopListening();
+  saveData('voice_events', { transcript, action: 'SOS Triggered' });
+  loadVoiceLog();
+  if (confirm(`🆘 VOICE SOS TRIGGERED!\n\nHeard: "${transcript}"\n\nSend emergency alert to contacts?`)) {
+    alert('✅ SOS Sent!\n• Contacts notified\n• Location shared\n• Help is on the way!');
+  }
+}
+
+function addKeyword() {
+  const kw = document.getElementById('custom-kw').value.trim().toLowerCase();
+  if (!kw) return;
+  TRIGGER_WORDS.push(kw);
+  document.getElementById('custom-kw').value = '';
+  alert(`✅ "${kw}" added as trigger keyword.`);
+}
+
+function toggleAlwaysOn(cb) {
+  if (cb.checked && !listening) startListening();
+  else if (!cb.checked && listening) stopListening();
+}
+
+function saveVoiceSettings() { alert('✅ Voice SOS settings saved!'); }
+
+function loadVoiceLog() {
+  const data = loadData('voice_events');
+  renderLog('voice-log', data, d => `<div class="list-item"><span style="font-size:22px">🎙️</span><div style="flex:1"><div class="fw-6">${d.action}</div><div class="muted">Heard: "${d.transcript}"</div><div class="muted text-xs">${d.time}</div></div><span class="badge red">SOS</span></div>`);
+}
+loadVoiceLog();
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwasthyaRakshak+ | Dashboard</title>
+    <link rel="stylesheet" href="v3.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="logo">
+            <i data-lucide="shield-plus" style="color: var(--primary);"></i>
+            SWASTHYA+
+        </div>
+        
+        <ul class="nav-links">
+            <li class="nav-item active">
+                <i data-lucide="home"></i>
+                Dashboard
+            </li>
+            <li class="nav-item">
+                <i data-lucide="activity"></i>
+                Vitals Monitor
+            </li>
+            <li class="nav-item">
+                <i data-lucide="calendar"></i>
+                Appointments
+            </li>
+            <li class="nav-item">
+                <i data-lucide="pill"></i>
+                Medicine
+            </li>
+            <li class="nav-item">
+                <i data-lucide="settings"></i>
+                Settings
+            </li>
+        </ul>
+
+        <!-- Family Hub Feature -->
+        <div class="family-hub">
+            <p style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Family Hub</p>
+            <div class="member">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Yash" alt="Me">
+                <span style="font-size: 13px;">Me (Yash)</span>
+            </div>
+            <div class="member" style="opacity: 0.6;">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mom" alt="Mom">
+                <span style="font-size: 13px;">Mom</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1 style="font-size: 24px; font-weight: 700;">Patient Dashboard</h1>
+                <p style="color: var(--text-muted); font-size: 14px;">Welcome back to your health overview.</p>
+            </div>
+            
+            <!-- SOS Feature Integrated into Header -->
+            <button class="sos-btn" onclick="triggerSOS()">
+                <i data-lucide="alert-circle"></i>
+                EMERGENCY SOS
+            </button>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="card stat-card">
+                <span class="stat-label">Heart Rate</span>
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                    <span class="stat-value">72</span>
+                    <span style="color: var(--text-muted); font-size: 14px;">bpm</span>
+                </div>
+                <div style="color: var(--success); font-size: 12px; font-weight: 600;">● Normal</div>
+            </div>
+            <div class="card stat-card">
+                <span class="stat-label">Temperature</span>
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                    <span class="stat-value">98.6</span>
+                    <span style="color: var(--text-muted); font-size: 14px;">°F</span>
+                </div>
+                <div style="color: var(--success); font-size: 12px; font-weight: 600;">● Normal</div>
+            </div>
+            <div class="card stat-card" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white;">
+                <span class="stat-label" style="color: rgba(255,255,255,0.8);">Health Score</span>
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                    <span class="stat-value" style="font-size: 36px;">88</span>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 14px;">/100</span>
+                </div>
+                <div style="color: white; font-size: 12px; font-weight: 600;">Great condition</div>
+            </div>
+        </div>
+
+        <!-- Forms -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="card">
+                <h3 style="font-size: 18px; margin-bottom: 20px;">Record New Vitals</h3>
+                <div class="input-group">
+                    <label style="font-size: 13px; font-weight: 600;">Heart Rate (bpm)</label>
+                    <input type="number" placeholder="e.g. 75">
+                </div>
+                <div class="input-group">
+                    <label style="font-size: 13px; font-weight: 600;">Temperature (°F)</label>
+                    <input type="number" placeholder="e.g. 98.4">
+                </div>
+                <button class="btn-primary" style="width: 100%;">Save Vitals</button>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 18px; margin-bottom: 20px;">AI Health Tips</h3>
+                <div style="padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #dbeafe; margin-bottom: 12px;">
+                    <p style="font-size: 13px; color: #1e40af; font-weight: 600;">💡 Stay Hydrated</p>
+                    <p style="font-size: 12px; color: #374151; margin-top: 4px;">Based on your activity, you should drink 2 more glasses of water today.</p>
+                </div>
+                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
+                    <p style="font-size: 13px; color: #166534; font-weight: 600;">✅ Exercise Goal</p>
+                    <p style="font-size: 12px; color: #374151; margin-top: 4px;">You've completed your 30-minute walk. Your heart recovery is excellent!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        function triggerSOS() {
+            if(confirm("🚨 Are you sure you want to trigger the Emergency SOS?\nThis will alert nearby hospitals and your contacts.")) {
+                alert("SOS Sent! Help is on the way.");
+            }
+        }
+    </script>
+</body>
+</html>

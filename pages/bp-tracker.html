@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BP Tracker | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">❤️ Smart BP Tracker</h1><p class="page-sub">Blood pressure logging & risk alerts</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card red"><div class="stat-icon">❤️</div><div class="stat-val" id="last-bp">–/–</div><div class="stat-lbl">Last Reading</div><span class="badge green" id="bp-status">No data</span></div>
+      <div class="stat-card blue"><div class="stat-icon">📊</div><div class="stat-val" id="bp-count">0</div><div class="stat-lbl">Total Readings</div></div>
+      <div class="stat-card yellow"><div class="stat-icon">⚠️</div><div class="stat-val" id="bp-alerts">0</div><div class="stat-lbl">High Risk Alerts</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Blood Pressure</div>
+        <div class="form-row">
+          <div class="form-group"><label>Systolic (mmHg)</label><input type="number" id="sys" placeholder="120" class="input"></div>
+          <div class="form-group"><label>Diastolic (mmHg)</label><input type="number" id="dia" placeholder="80" class="input"></div>
+        </div>
+        <div class="form-group"><label>Pulse (bpm)</label><input type="number" id="pulse" placeholder="72" class="input"></div>
+        <div class="form-group"><label>Time of Reading</label>
+          <select id="bp-time" class="input"><option>Morning</option><option>Afternoon</option><option>Evening</option><option>Night</option></select>
+        </div>
+        <div class="form-group"><label>Notes (optional)</label><input type="text" id="bp-notes" placeholder="After exercise, feeling stressed..." class="input"></div>
+        <button class="btn btn-primary w-full" onclick="logBP()">💾 Save Reading</button>
+        <div id="bp-alert-box" class="alert hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">BP History (Last 7)</div>
+        <div class="bar-chart" id="bp-chart"></div>
+        <div class="divider"></div>
+        <div id="bp-log"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Blood Pressure Risk Guide</div>
+      <div class="risk-grid">
+        <div class="risk-item green">✅ Normal<br><small>&lt; 120/80</small></div>
+        <div class="risk-item yellow">⚡ Elevated<br><small>120–129 / &lt;80</small></div>
+        <div class="risk-item orange">⚠️ High Stage 1<br><small>130–139 / 80–89</small></div>
+        <div class="risk-item red">🚨 High Stage 2<br><small>140+ / 90+</small></div>
+        <div class="risk-item dark-red">🆘 Crisis<br><small>180+ / 120+</small></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('bp');
+
+function getBPStatus(sys, dia) {
+  if (sys >= 180 || dia >= 120) return { label: '🆘 Crisis', cls: 'red', alert: true };
+  if (sys >= 140 || dia >= 90) return { label: '🚨 High Stage 2', cls: 'red', alert: true };
+  if (sys >= 130 || dia >= 80) return { label: '⚠️ High Stage 1', cls: 'yellow', alert: true };
+  if (sys >= 120 && dia < 80) return { label: '⚡ Elevated', cls: 'yellow', alert: false };
+  return { label: '✅ Normal', cls: 'green', alert: false };
+}
+
+function logBP() {
+  const sys = parseInt(document.getElementById('sys').value);
+  const dia = parseInt(document.getElementById('dia').value);
+  const pulse = document.getElementById('pulse').value;
+  const time = document.getElementById('bp-time').value;
+  const notes = document.getElementById('bp-notes').value;
+  if (!sys || !dia) return alert('Please enter systolic and diastolic values.');
+  const status = getBPStatus(sys, dia);
+  const entry = { sys, dia, pulse, time, notes, status: status.label };
+  saveData('bp_readings', entry);
+  const alertBox = document.getElementById('bp-alert-box');
+  if (status.alert) {
+    alertBox.className = 'alert alert-red';
+    alertBox.textContent = `⚠️ ${status.label} detected! Please consult your doctor.`;
+  } else {
+    alertBox.className = 'alert alert-green';
+    alertBox.textContent = `✅ Reading saved! Your BP is ${status.label}`;
+  }
+  document.getElementById('sys').value = '';
+  document.getElementById('dia').value = '';
+  document.getElementById('pulse').value = '';
+  document.getElementById('bp-notes').value = '';
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const data = loadData('bp_readings');
+  if (data.length) {
+    const last = data[0];
+    document.getElementById('last-bp').textContent = `${last.sys}/${last.dia}`;
+    const s = document.getElementById('bp-status');
+    s.textContent = last.status;
+    s.className = `badge ${last.status.includes('Normal') ? 'green' : last.status.includes('Crisis') || last.status.includes('Stage 2') ? 'red' : 'yellow'}`;
+  }
+  document.getElementById('bp-count').textContent = data.length;
+  document.getElementById('bp-alerts').textContent = data.filter(d => d.status.includes('High') || d.status.includes('Crisis')).length;
+  const recent = data.slice(0, 7).reverse();
+  renderBarChart('bp-chart', recent.map(d => d.sys), recent.map(d => d.time || '–'), '#ef4444');
+  renderLog('bp-log', data, d => `
+    <div class="list-item">
+      <span style="font-size:24px">❤️</span>
+      <div style="flex:1"><div class="fw-6">${d.sys}/${d.dia} mmHg <small class="muted">· ${d.pulse || '–'} bpm</small></div><div class="muted">${d.time} · ${d.notes || 'No notes'}</div></div>
+      <div>${d.status.includes('Normal') ? '<span class="badge green">Normal</span>' : d.status.includes('Crisis') ? '<span class="badge red">Crisis</span>' : '<span class="badge yellow">High</span>'}</div>
+      <div class="muted text-xs">${d.time || ''}</div>
+    </div>`);
+}
+updateDisplay();
+</script>
+</body>
+</html>

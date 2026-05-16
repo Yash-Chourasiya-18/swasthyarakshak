@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Report Scanner | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.upload-zone{border:3px dashed var(--gray-200);border-radius:16px;padding:40px;text-align:center;transition:.3s;cursor:pointer;background:var(--gray-50)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--primary);background:var(--primary-light)}
+.upload-icon{font-size:56px;display:block;margin-bottom:12px}
+.scan-result{background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px;margin-top:16px}
+.value-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:13px;align-items:center}
+.value-row:last-child{border:none}
+.normal-flag{color:#166534;font-weight:600}
+.high-flag{color:#991b1b;font-weight:600}
+.low-flag{color:#1e40af;font-weight:600}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">📄 AI Report Scanner</h1><p class="page-sub">Camera se report scan karke summary pao</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="grid-2">
+      <div>
+        <div class="card mb-4">
+          <div class="card-title">📸 Upload Medical Report</div>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)">
+            <span class="upload-icon" id="upload-icon">📄</span>
+            <p class="fw-6" id="upload-title">Click or Drag to Upload Report</p>
+            <p class="muted text-sm mt-1">Supports: Blood test, X-Ray report, CBC, Lipid panel etc.</p>
+            <p class="muted text-sm">JPG, PNG, PDF — Max 10MB</p>
+          </div>
+          <input type="file" id="file-input" accept="image/*,.pdf" style="display:none" onchange="handleFile(this)">
+          <div class="divider"></div>
+          <div class="form-group"><label>Or Select Report Type for Demo</label>
+            <select id="demo-type" class="input">
+              <option value="">Choose demo report...</option>
+              <option value="cbc">Complete Blood Count (CBC)</option>
+              <option value="lipid">Lipid Profile</option>
+              <option value="lft">Liver Function Test (LFT)</option>
+              <option value="kft">Kidney Function Test (KFT)</option>
+              <option value="thyroid">Thyroid Profile</option>
+              <option value="diabetes">Diabetes Panel (HbA1c + FBS)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary w-full" onclick="scanDemo()">🔍 Analyze Report</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Scan History</div>
+          <div id="scan-history"><p class="muted text-sm" style="padding:8px 0">No scans yet.</p></div>
+        </div>
+      </div>
+
+      <div id="result-area">
+        <div class="card" style="text-align:center;padding:40px">
+          <div style="font-size:56px;margin-bottom:12px">🔬</div>
+          <p class="fw-6">Upload or select a report type to analyze</p>
+          <p class="muted text-sm mt-2">AI will extract values and flag abnormal results</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('ai-report');
+
+const DEMO_REPORTS = {
+  cbc: { title: '🩸 Complete Blood Count (CBC)', values: [
+    { name: 'Hemoglobin (Hgb)', val: '11.2 g/dL', ref: '13.5–17.5', flag: 'low', note: 'Low — Mild Anemia. Increase iron-rich foods.' },
+    { name: 'WBC (White Blood Cells)', val: '9,200 /μL', ref: '4,500–11,000', flag: 'normal', note: 'Normal' },
+    { name: 'Platelets', val: '2,40,000 /μL', ref: '1,50,000–4,50,000', flag: 'normal', note: 'Normal' },
+    { name: 'RBC', val: '4.1 million/μL', ref: '4.5–5.5', flag: 'low', note: 'Slightly low — Monitor' },
+    { name: 'MCV', val: '72 fL', ref: '80–100', flag: 'low', note: 'Low — Iron deficiency anemia pattern' },
+    { name: 'Neutrophils', val: '68%', ref: '50–70%', flag: 'normal', note: 'Normal' },
+  ]},
+  lipid: { title: '❤️ Lipid Profile', values: [
+    { name: 'Total Cholesterol', val: '218 mg/dL', ref: '<200', flag: 'high', note: 'High — Reduce saturated fats, exercise more.' },
+    { name: 'LDL Cholesterol', val: '148 mg/dL', ref: '<130', flag: 'high', note: 'High — "Bad" cholesterol elevated. See cardiologist.' },
+    { name: 'HDL Cholesterol', val: '38 mg/dL', ref: '>40 (M), >50 (F)', flag: 'low', note: 'Low — "Good" cholesterol. Increase aerobic exercise.' },
+    { name: 'Triglycerides', val: '172 mg/dL', ref: '<150', flag: 'high', note: 'Borderline High — Reduce sugar & alcohol.' },
+    { name: 'VLDL', val: '34 mg/dL', ref: '2–30', flag: 'high', note: 'Slightly elevated.' },
+  ]},
+  diabetes: { title: '🩸 Diabetes Panel', values: [
+    { name: 'Fasting Blood Sugar', val: '118 mg/dL', ref: '70–100', flag: 'high', note: 'Elevated — Pre-diabetic range. Lifestyle changes needed.' },
+    { name: 'HbA1c', val: '6.2%', ref: '<5.7%', flag: 'high', note: 'Pre-diabetic (5.7–6.4%). Consult diabetologist.' },
+    { name: 'Post-Prandial Sugar (2h)', val: '158 mg/dL', ref: '<140', flag: 'high', note: 'Elevated — Pre-diabetic. Reduce carb intake.' },
+    { name: 'C-Peptide', val: '1.8 ng/mL', ref: '0.8–3.1', flag: 'normal', note: 'Normal — Adequate insulin production.' },
+  ]},
+  thyroid: { title: '🦋 Thyroid Profile', values: [
+    { name: 'TSH', val: '6.8 mIU/L', ref: '0.4–4.0', flag: 'high', note: 'High — Hypothyroidism likely. See endocrinologist.' },
+    { name: 'Free T4 (fT4)', val: '0.7 ng/dL', ref: '0.8–1.8', flag: 'low', note: 'Low — Confirms hypothyroid. Medication may be needed.' },
+    { name: 'Free T3 (fT3)', val: '2.4 pg/mL', ref: '2.3–4.2', flag: 'normal', note: 'Borderline normal.' },
+    { name: 'Anti-TPO Antibodies', val: '42 IU/mL', ref: '<35', flag: 'high', note: 'Elevated — Autoimmune thyroid (Hashimoto\'s).' },
+  ]},
+  lft: { title: '🫀 Liver Function Test (LFT)', values: [
+    { name: 'SGPT (ALT)', val: '52 U/L', ref: '7–40', flag: 'high', note: 'Elevated — Liver inflammation. Avoid alcohol. Recheck in 4 weeks.' },
+    { name: 'SGOT (AST)', val: '38 U/L', ref: '10–40', flag: 'normal', note: 'Normal' },
+    { name: 'Bilirubin Total', val: '0.9 mg/dL', ref: '0.2–1.2', flag: 'normal', note: 'Normal' },
+    { name: 'Alkaline Phosphatase', val: '95 U/L', ref: '44–147', flag: 'normal', note: 'Normal' },
+    { name: 'Albumin', val: '4.1 g/dL', ref: '3.5–5.0', flag: 'normal', note: 'Normal' },
+  ]},
+  kft: { title: '🫘 Kidney Function Test (KFT)', values: [
+    { name: 'Serum Creatinine', val: '1.4 mg/dL', ref: '0.7–1.2 (M)', flag: 'high', note: 'Slightly elevated. Monitor kidney function. Stay hydrated.' },
+    { name: 'Blood Urea Nitrogen', val: '22 mg/dL', ref: '7–20', flag: 'high', note: 'Slightly high. Reduce protein intake.' },
+    { name: 'eGFR', val: '68 mL/min', ref: '>60', flag: 'normal', note: 'Normal — Early CKD Stage 2 risk. Monitor.' },
+    { name: 'Serum Uric Acid', val: '7.8 mg/dL', ref: '3.4–7.0 (M)', flag: 'high', note: 'High — Gout risk. Avoid red meat and alcohol.' },
+    { name: 'Sodium', val: '138 mEq/L', ref: '135–145', flag: 'normal', note: 'Normal' },
+  ]}
+};
+
+function scanDemo() {
+  const type = document.getElementById('demo-type').value;
+  if (!type) return alert('Select a report type first or upload a file.');
+  const report = DEMO_REPORTS[type];
+  showResults(report);
+  saveData('scan_history', { type: report.title, flagged: report.values.filter(v=>v.flag!=='normal').length });
+  loadHistory();
+}
+
+function showResults(report) {
+  const flagCount = report.values.filter(v => v.flag !== 'normal').length;
+  const highCount = report.values.filter(v => v.flag === 'high').length;
+  const lowCount = report.values.filter(v => v.flag === 'low').length;
+  document.getElementById('result-area').innerHTML = `
+    <div class="card">
+      <div class="card-title">${report.title}</div>
+      ${flagCount > 0 ? `<div class="alert ${highCount > 1 ? 'alert-red' : 'alert-yellow'} mb-4">⚠️ ${flagCount} abnormal value(s) detected. Review highlighted results below and consult your doctor.</div>` : '<div class="alert alert-green mb-4">✅ All values within normal range. Keep maintaining your healthy lifestyle!</div>'}
+      <div class="scan-result">
+        <div class="value-row" style="font-weight:700;color:var(--gray-500);font-size:11px;text-transform:uppercase">
+          <span>Test</span><span>Value</span><span>Reference</span><span>Status</span>
+        </div>
+        ${report.values.map(v => `
+          <div class="value-row" style="background:${v.flag === 'high' ? '#fff1f2' : v.flag === 'low' ? '#eff6ff' : 'transparent'};border-radius:6px;padding:10px">
+            <div><div class="fw-6" style="font-size:13px">${v.name}</div><div class="muted" style="font-size:11px">${v.note}</div></div>
+            <div class="${v.flag === 'high' ? 'high-flag' : v.flag === 'low' ? 'low-flag' : 'normal-flag'}" style="font-size:14px">${v.val}</div>
+            <div class="muted text-xs">${v.ref}</div>
+            <div>${v.flag === 'normal' ? '✅' : v.flag === 'high' ? '🔴 H' : '🔵 L'}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('upload-icon').textContent = '✅';
+  document.getElementById('upload-title').textContent = file.name;
+  setTimeout(() => { alert('📄 File uploaded! In production, OCR + AI will extract values from your report.\n\nFor demo, please select a report type from dropdown.'); }, 500);
+}
+
+function handleDrag(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag-over'); if (e.dataTransfer.files.length) { const input = document.getElementById('file-input'); input.files = e.dataTransfer.files; handleFile(input); } }
+
+function loadHistory() {
+  const data = loadData('scan_history');
+  renderLog('scan-history', data, d => `<div class="list-item"><span style="font-size:22px">📄</span><div style="flex:1"><div class="fw-6">${d.type}</div><div class="muted text-sm">${d.time} · ${d.flagged} flag(s)</div></div><span class="badge ${d.flagged > 0 ? 'red' : 'green'}">${d.flagged > 0 ? d.flagged+' Flags' : 'Normal'}</span></div>`);
+}
+loadHistory();
+</script>
+</body>
+</html>

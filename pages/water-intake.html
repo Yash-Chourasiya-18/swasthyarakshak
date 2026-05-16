@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Water Intake | SwasthyaRakshak+</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+.water-hero{display:flex;align-items:center;gap:40px;background:white;border:1px solid var(--gray-200);border-radius:12px;padding:32px;margin-bottom:20px}
+.water-circle{position:relative;width:180px;height:180px;flex-shrink:0}
+.water-circle svg{transform:rotate(-90deg)}
+.water-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.water-inner .num{font-size:40px;font-weight:800;color:var(--primary)}
+.water-inner .sub{font-size:13px;color:var(--gray-500)}
+.drops{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.drop{width:40px;height:40px;border-radius:50%;border:2px solid #bfdbfe;background:#eff6ff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s}
+.drop.filled{background:var(--primary);border-color:var(--primary);font-size:18px}
+.drop.filled::after{content:'💧'}
+.drop.filled .inner{display:none}
+.inner{color:var(--gray-300)}
+</style>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<main class="main">
+  <div class="topbar">
+    <div><h1 class="page-title">💧 Water Intake Tracker</h1><p class="page-sub">Hydration tracking with daily goals</p></div>
+    <a href="../index.html" class="btn-home">← Dashboard</a>
+  </div>
+  <div class="content">
+
+    <div class="water-hero">
+      <div class="water-circle">
+        <svg width="180" height="180"><circle cx="90" cy="90" r="80" fill="none" stroke="#e0f2fe" stroke-width="14"/><circle id="water-ring" cx="90" cy="90" r="80" fill="none" stroke="#0ea5e9" stroke-width="14" stroke-dasharray="502" stroke-dashoffset="502" stroke-linecap="round" style="transition:stroke-dashoffset 0.5s ease"/></svg>
+        <div class="water-inner"><span class="num" id="glass-count">0</span><span class="sub" id="glass-label">/ 8 glasses</span></div>
+      </div>
+      <div style="flex:1">
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:6px">Stay Hydrated!</h2>
+        <p class="muted mb-4">Goal: <strong id="goal-display">8 glasses (2 litres)</strong> per day</p>
+        <div class="drops" id="drops-container"></div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-primary" onclick="addGlass()">+ Add Glass</button>
+          <button class="btn btn-outline" onclick="removeGlass()">– Remove</button>
+          <button class="btn btn-outline" onclick="resetWater()">Reset</button>
+        </div>
+        <div id="water-alert" class="alert alert-blue mt-3">💡 Tip: Drink a glass of water first thing in the morning!</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚙️ Set Daily Goal</div>
+        <div class="form-group"><label>Daily Target (glasses)</label><input type="number" id="goal-input" value="8" min="1" max="20" class="input"></div>
+        <div class="form-group"><label>Glass Size</label>
+          <select class="input" id="glass-size"><option value="250">250 ml (Standard)</option><option value="300">300 ml (Large)</option><option value="150">150 ml (Small)</option></select>
+        </div>
+        <div class="form-group"><label>Reminder (every)</label>
+          <select class="input">
+            <option>Every 1 hour</option><option>Every 2 hours</option><option>Every 30 min</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w-full" onclick="saveGoal()">Save Settings</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Weekly Hydration</div>
+        <div class="bar-chart" id="water-weekly-chart"></div>
+        <div class="divider"></div>
+        <div class="flex-between text-sm"><span class="muted">This week average</span><strong id="week-avg">– glasses</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Today's Log</div>
+      <div id="water-log"></div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = getSidebar('water');
+let goal = parseInt(localStorage.getItem('water_goal') || '8');
+let glasses = parseInt(localStorage.getItem('water_today_' + today()) || '0');
+
+function today() { return new Date().toDateString(); }
+function save() { localStorage.setItem('water_today_' + today(), glasses); updateUI(); logWaterEntry(); }
+
+function addGlass() {
+  if (glasses >= goal) { showAlert('🎉 Goal reached! Great job staying hydrated.', 'alert-green'); return; }
+  glasses++; save();
+}
+function removeGlass() { if (glasses > 0) { glasses--; save(); } }
+function resetWater() { glasses = 0; save(); }
+
+function saveGoal() {
+  goal = parseInt(document.getElementById('goal-input').value) || 8;
+  const size = document.getElementById('glass-size').value;
+  localStorage.setItem('water_goal', goal);
+  document.getElementById('goal-display').textContent = `${goal} glasses (${Math.round(goal * size / 1000 * 10) / 10} litres)`;
+  updateUI();
+}
+
+function logWaterEntry() {
+  const entries = JSON.parse(localStorage.getItem('water_log') || '[]');
+  entries.unshift({ glasses, time: new Date().toLocaleTimeString(), date: today() });
+  localStorage.setItem('water_log', JSON.stringify(entries.slice(0, 100)));
+  renderWaterLog();
+}
+
+function renderWaterLog() {
+  const entries = JSON.parse(localStorage.getItem('water_log') || '[]').filter(e => e.date === today());
+  renderLog('water-log', entries, e => `<div class="list-item"><span style="font-size:22px">💧</span><div class="fw-6">${e.glasses} glass${e.glasses !== 1 ? 'es' : ''} recorded</div><span class="muted">${e.time}</span></div>`);
+}
+
+function showAlert(msg, cls) {
+  const el = document.getElementById('water-alert');
+  el.className = `alert ${cls}`;
+  el.textContent = msg;
+}
+
+function updateUI() {
+  document.getElementById('glass-count').textContent = glasses;
+  document.getElementById('glass-label').textContent = `/ ${goal} glasses`;
+  document.getElementById('goal-input').value = goal;
+  const pct = Math.min(glasses / goal, 1);
+  const circ = 2 * Math.PI * 80;
+  document.getElementById('water-ring').style.strokeDashoffset = circ - circ * pct;
+  const dc = document.getElementById('drops-container');
+  dc.innerHTML = '';
+  for (let i = 0; i < goal; i++) {
+    const d = document.createElement('div');
+    d.className = `drop${i < glasses ? ' filled' : ''}`;
+    if (i >= glasses) d.innerHTML = '<span class="inner">○</span>';
+    d.onclick = () => { glasses = i + 1; save(); };
+    dc.appendChild(d);
+  }
+  if (glasses >= goal) showAlert('🎉 Daily goal reached! Great hydration today!', 'alert-green');
+  else if (glasses >= goal * 0.5) showAlert('👍 Halfway there! Keep drinking water regularly.', 'alert-blue');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today = new Date().getDay();
+  const vals = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    return parseInt(localStorage.getItem('water_today_' + d.toDateString()) || '0');
+  });
+  renderBarChart('water-weekly-chart', vals, days.slice(today+1).concat(days.slice(0,today+1)).slice(-7), '#0ea5e9');
+  const avg = vals.filter(Boolean).length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.filter(Boolean).length) : 0;
+  document.getElementById('week-avg').textContent = `${avg} glasses`;
+}
+
+updateUI();
+renderWaterLog();
+</script>
+</body>
+</html>
